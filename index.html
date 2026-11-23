@@ -35,6 +35,14 @@ form.search input{flex:1 1 220px;min-height:46px;border:0;border-radius:12px;pad
 .btn.solid{background:#fff;color:#b3161d;border-color:#fff}
 .results{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .results button{min-height:40px;border:0;border-radius:10px;background:#fff;color:#0f172a;padding:0 12px;text-align:left}
+.recent{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.recent:empty{display:none}
+.rlab{font-size:14px;opacity:.85;margin-right:2px}
+.rchip{display:inline-flex;align-items:center;background:rgba(255,255,255,.16);border-radius:999px;overflow:hidden}
+.rchip button{border:0;background:none;color:#fff;min-height:38px;padding:0 6px 0 14px;font-size:14px;font-weight:500;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.rchip button.rx{padding:0 12px 0 6px;font-size:18px;opacity:.75;min-width:38px}
+.rchip button.rx:hover{opacity:1}
+.rchip.on{background:#fff}.rchip.on button{color:#b3161d}
 .hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px;align-items:center;margin-top:22px}
 .place{font-size:17px;opacity:.9}
 .now{font:800 clamp(72px,14vw,148px)/1 Archivo,sans-serif;letter-spacing:-.04em;margin:6px 0}
@@ -113,6 +121,7 @@ footer{font-size:13px;color:var(--mut)}
       <button class="btn" type="button" id="refresh" hidden>Refresh</button>
     </form>
     <div class="results" id="results"></div>
+    <div class="recent" id="recent"></div>
     <div id="heroBox">
       <div class="empty">Search for a place. This app pulls forecasts from up to nine weather models and forecasting agencies, then blends them into one consensus forecast.</div>
     </div>
@@ -564,6 +573,7 @@ async function loadLoc(loc){
   const mn=S.sources.find(s=>s.id==='metno'&&s.ok);if(mn)finishMetno(mn);
   const nw=S.sources.find(s=>s.id==='nws'&&s.ok);
   if(loc.gps&&nw&&nw.place){loc.label=`${nw.place.city}, ${nw.place.state}`;save('loc',loc)}
+  addRecent(loc);
   S.ens=[];S.ensLoading=true;render();
   const er=await Promise.allSettled(ENS.map(m=>ens(m,loc.lat,loc.lon)));
   if(S.loc!==loc)return;
@@ -571,6 +581,23 @@ async function loadLoc(loc){
   S.ensLoading=false;renderOutlook();renderSources();
 }
 
+// Last 5 places, newest first, kept in this browser
+const rkey=r=>r.lat.toFixed(2)+','+r.lon.toFixed(2);
+const recents=()=>(load('recent')||[]).filter(r=>r&&r.lat!=null&&r.lon!=null);
+function addRecent(loc){
+  const item={lat:loc.lat,lon:loc.lon,label:loc.label,gps:!!loc.gps};
+  save('recent',[item,...recents().filter(r=>rkey(r)!==rkey(item))].slice(0,5));renderRecent();
+}
+function renderRecent(){
+  const list=recents(),cur=S.loc?rkey(S.loc):'';
+  $('#recent').innerHTML=list.length?'<span class="rlab">Recent</span>'+list.map((r,i)=>
+    `<span class="rchip${rkey(r)===cur?' on':''}"><button type="button" data-i="${i}">${esc(r.label)}</button><button type="button" class="rx" data-x="${i}" aria-label="Remove ${esc(r.label)} from recent">×</button></span>`).join(''):'';
+}
+$('#recent').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const list=recents();
+  if(b.dataset.x!=null){list.splice(+b.dataset.x,1);save('recent',list);renderRecent();return}
+  const r=list[+b.dataset.i];if(r){$('#results').innerHTML='';loadLoc({...r})}
+});
 $('#search').addEventListener('submit',async e=>{
   e.preventDefault();const q=$('#q').value.trim();if(!q)return;
   $('#status').textContent='Searching…';
@@ -599,7 +626,7 @@ function setUnit(u){S.unit=u;save('unit',u);$('#uF').setAttribute('aria-pressed'
 function setW(w){S.weighted=w;save('weighted',w);$('#wS').setAttribute('aria-pressed',w);$('#wE').setAttribute('aria-pressed',!w);if(S.sources.length)render()}
 $('#uF').onclick=()=>setUnit('F');$('#uC').onclick=()=>setUnit('C');
 $('#wS').onclick=()=>setW(true);$('#wE').onclick=()=>setW(false);
-setUnit(S.unit);setW(S.weighted);
+setUnit(S.unit);setW(S.weighted);renderRecent();
 const saved=load('loc');if(saved&&saved.lat!=null)loadLoc(saved);
 }
 </script>
