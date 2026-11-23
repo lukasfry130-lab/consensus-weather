@@ -30,7 +30,13 @@ button{cursor:pointer}
 .seg button{border:0;background:none;color:#fff;min-height:38px;padding:0 14px;border-radius:999px;font-weight:600}
 .seg button[aria-pressed=true]{background:#fff;color:#b3161d}
 form.search{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 6px}
-form.search input{flex:1 1 220px;min-height:46px;border:0;border-radius:12px;padding:0 14px;font-size:16px;color:#0f172a;background:#fff}
+.qwrap{position:relative;flex:1 1 220px}
+#sugg{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;list-style:none;margin:0;padding:6px;background:#fff;color:#0f172a;border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.25);max-height:340px;overflow-y:auto}
+#sugg li{display:flex;flex-direction:column;justify-content:center;min-height:46px;padding:6px 12px;border-radius:8px;cursor:pointer}
+#sugg li[aria-selected=true],#sugg li:hover{background:#fde8e7}
+#sugg li b{font-weight:600}#sugg li span{font-size:13px;color:#5b6576}
+#sugg li.rec span{color:#b3161d}
+form.search input{width:100%;min-height:46px;border:0;border-radius:12px;padding:0 14px;font-size:16px;color:#0f172a;background:#fff}
 .btn{min-height:46px;border-radius:12px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;padding:0 16px;font-weight:600}
 .btn.solid{background:#fff;color:#b3161d;border-color:#fff}
 .results{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -115,7 +121,10 @@ footer{font-size:13px;color:var(--mut)}
       </div>
     </div>
     <form class="search" id="search">
-      <input id="q" type="search" placeholder="City or ZIP code" aria-label="City or ZIP code" autocomplete="off">
+      <div class="qwrap">
+        <input id="q" type="search" placeholder="City or ZIP code" aria-label="City or ZIP code" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugg">
+        <ul id="sugg" role="listbox" hidden></ul>
+      </div>
       <button class="btn solid" type="submit">Search</button>
       <button class="btn" type="button" id="geo">Use my location</button>
       <button class="btn" type="button" id="refresh" hidden>Refresh</button>
@@ -598,19 +607,67 @@ $('#recent').addEventListener('click',e=>{
   if(b.dataset.x!=null){list.splice(+b.dataset.x,1);save('recent',list);renderRecent();return}
   const r=list[+b.dataset.i];if(r){$('#results').innerHTML='';loadLoc({...r})}
 });
+const STATES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',CT:'Connecticut',DE:'Delaware',DC:'District of Columbia',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming',PR:'Puerto Rico'};
+const mkLoc=x=>({lat:x.latitude,lon:x.longitude,label:[x.name,x.admin1,x.country_code==='US'?'':x.country].filter(Boolean).join(', ')});
+// "Charlotte, NC" → search "Charlotte", keep results in North Carolina
+async function geocode(text,count=6){
+  const parts=text.split(',').map(s=>s.trim()).filter(Boolean),name=parts[0]||'',rest=(parts[1]||'').toLowerCase();
+  if(name.length<2)return [];
+  const zip=/^\d{5}$/.test(name);
+  const d=await j(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=${rest?20:count}&language=en&format=json${zip?'&countryCode=US':''}`);
+  let r=d.results||[];
+  if(rest){const full=(STATES[rest.toUpperCase()]||rest).toLowerCase();r=r.filter(x=>[x.admin1,x.country,x.country_code].some(v=>v&&v.toLowerCase().startsWith(full)))}
+  return r.slice(0,count);
+}
+
+// Suggestions as you type: matching recent places first, then places from the geocoder
+const qi=$('#q'),sbox=$('#sugg');let sugg=[],act=-1,seq=0,stimer;
+function showSugg(){
+  sbox.innerHTML=sugg.map((s,i)=>`<li id="sg${i}" role="option" data-i="${i}" aria-selected="${i===act}"${s.recent?' class="rec"':''}><b>${esc(s.title)}</b><span>${esc(s.sub)}</span></li>`).join('');
+  sbox.hidden=!sugg.length;qi.setAttribute('aria-expanded',!!sugg.length);
+  if(act>=0){qi.setAttribute('aria-activedescendant','sg'+act);const el=document.getElementById('sg'+act);if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest'})}else qi.removeAttribute('aria-activedescendant');
+}
+function closeSugg(){seq++;clearTimeout(stimer);sugg=[];act=-1;showSugg()}
+function recentMatches(v){
+  const t=v.toLowerCase();
+  return recents().filter(r=>r.label.toLowerCase().split(/,\s*|\s+/).some(w=>w.startsWith(t))||r.label.toLowerCase().startsWith(t))
+    .map(r=>({loc:r,title:r.label.split(',')[0],sub:'Recent'+(r.label.includes(',')?' · '+r.label.split(',').slice(1).join(',').trim():''),recent:true}));
+}
+qi.addEventListener('input',()=>{
+  clearTimeout(stimer);const v=qi.value.trim();
+  if(v.length<2){closeSugg();return}
+  const rec=recentMatches(v);sugg=rec;act=-1;showSugg();
+  const my=++seq;
+  stimer=setTimeout(async()=>{
+    try{
+      const r=await geocode(v);if(my!==seq)return;
+      const have=new Set(rec.map(s=>rkey(s.loc)));
+      sugg=[...rec,...r.map(x=>({loc:mkLoc(x),title:x.name,sub:[x.admin1,x.country].filter(Boolean).join(', ')})).filter(s=>!have.has(rkey(s.loc)))].slice(0,8);
+      act=-1;showSugg();
+    }catch(e){}
+  },250);
+});
+qi.addEventListener('keydown',e=>{
+  if(sbox.hidden)return;
+  if(e.key==='ArrowDown'){act=(act+1)%sugg.length;showSugg();e.preventDefault()}
+  else if(e.key==='ArrowUp'){act=(act-1+sugg.length)%sugg.length;showSugg();e.preventDefault()}
+  else if(e.key==='Escape'){closeSugg()}
+  else if(e.key==='Enter'&&act>=0){e.preventDefault();pick(act)}
+});
+function pick(i){const s=sugg[i];if(!s)return;qi.value='';closeSugg();qi.blur();$('#results').innerHTML='';loadLoc({...s.loc})}
+sbox.addEventListener('pointerdown',e=>{const li=e.target.closest('li');if(li){e.preventDefault();pick(+li.dataset.i)}});
+qi.addEventListener('blur',()=>setTimeout(()=>{if(document.activeElement!==qi)closeSugg()},150));
+
 $('#search').addEventListener('submit',async e=>{
-  e.preventDefault();const q=$('#q').value.trim();if(!q)return;
-  $('#status').textContent='Searching…';
+  e.preventDefault();const q=qi.value.trim();if(!q)return;
+  closeSugg();$('#status').textContent='Searching…';
   try{
-    const zip=/^\d{5}$/.test(q);
-    const d=await j(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json${zip?'&countryCode=US':''}`);
-    const r=d.results||[];
+    const r=await geocode(q,6);
     if(!r.length){$('#status').textContent='No matches. Try "City, State" or a ZIP code.';return}
-    const mk=x=>({lat:x.latitude,lon:x.longitude,label:[x.name,x.admin1,x.country_code==='US'?'':x.country].filter(Boolean).join(', ')});
-    if(r.length===1){loadLoc(mk(r[0]));return}
+    if(r.length===1){qi.value='';loadLoc(mkLoc(r[0]));return}
     $('#status').textContent='Pick the right place:';
     const box=$('#results');box.innerHTML='';
-    r.forEach(x=>{const b=document.createElement('button');b.type='button';const l=mk(x);b.textContent=l.label+(x.postcodes&&zip?'':'');b.onclick=()=>loadLoc(l);box.appendChild(b)});
+    r.forEach(x=>{const b=document.createElement('button');b.type='button';const l=mkLoc(x);b.textContent=l.label;b.onclick=()=>{qi.value='';loadLoc(l)};box.appendChild(b)});
   }catch(err){$('#status').textContent='Search failed ('+err.message+'). Check your connection.'}
 });
 $('#geo').addEventListener('click',()=>{
