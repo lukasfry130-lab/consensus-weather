@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Consensus Weather</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a calm, exact forecaster's instrument — confident numbers, honest about disagreement.
+   IDEA: a briefing sheet that lays every forecast model side by side and draws the consensus.
+   PICTURE: big sky band with the consensus sky icon and temperature; a 48-hour band chart showing model spread.
+   COLOUR and TYPE: sky blue ground, warm coral for highs, cool cyan for lows; Archivo numerals, Inter text.
+   LAYOUT: sky band → 7-day strip → day breakdown by source → hourly spread chart → sources & method. */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0d131d);--ink:light-dark(#0f172a,#e8eef7);--mut:light-dark(#5b6576,#9aa7ba);--line:light-dark(#e3e8ef,#243042);--card:light-dark(#ffffff,#131b28);--soft:light-dark(#f1f5fb,#172133);--warm:#ff6a3d;--cool:#22a3d8;--sky1:light-dark(#e0312b,#b3221d);--sky2:light-dark(#a8121b,#5e0c10);--cloud:light-dark(#c3cfe0,#5d6b80)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(24px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,.num{font-family:Archivo,Inter,sans-serif}
+h2{font-size:24px;line-height:1.15;margin:0 0 14px;text-wrap:balance}
+button,input{font:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid #ffc83d;outline-offset:2px}
+.sky{background:linear-gradient(160deg,var(--sky1),var(--sky2));color:#fff;--cloud:#f3f7fd}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.brand{font:800 20px/1 Archivo,sans-serif;letter-spacing:-.01em}
+.seg{display:inline-flex;background:rgba(255,255,255,.16);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;color:#fff;min-height:38px;padding:0 14px;border-radius:999px;font-weight:600}
+.seg button[aria-pressed=true]{background:#fff;color:#b3161d}
+form.search{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 6px}
+form.search input{flex:1 1 220px;min-height:46px;border:0;border-radius:12px;padding:0 14px;font-size:16px;color:#0f172a;background:#fff}
+.btn{min-height:46px;border-radius:12px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;padding:0 16px;font-weight:600}
+.btn.solid{background:#fff;color:#b3161d;border-color:#fff}
+.results{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.results button{min-height:40px;border:0;border-radius:10px;background:#fff;color:#0f172a;padding:0 12px;text-align:left}
+.hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px;align-items:center;margin-top:22px}
+.place{font-size:17px;opacity:.9}
+.now{font:800 clamp(72px,14vw,148px)/1 Archivo,sans-serif;letter-spacing:-.04em;margin:6px 0}
+.cond{font-size:20px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{background:rgba(255,255,255,.14);border-radius:10px;padding:8px 12px;font-size:14px;white-space:nowrap}
+.chip b{font-family:Archivo,sans-serif;font-size:16px}
+.bigicon{width:100%;max-width:320px;justify-self:center;aspect-ratio:11/10}
+.bigicon svg{width:100%;height:100%}
+.status{font-size:14px;opacity:.9;margin-top:14px;min-height:22px}
+.days{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(118px,1fr);gap:10px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}
+.day{scroll-snap-align:start;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:16px;padding:12px;text-align:left;min-height:44px}
+.day[aria-pressed=true]{border-color:var(--sky1);box-shadow:0 0 0 2px var(--sky1) inset}
+.day .dn{font-weight:600}.day .dd{font-size:13px;color:var(--mut)}
+.day svg{width:56px;height:51px;display:block;margin:6px 0}
+.hl{font-family:Archivo,sans-serif;font-size:20px;white-space:nowrap}.hl .h{color:var(--warm)}.hl .l{color:var(--cool);margin-left:6px}
+.rain{font-size:13px;color:var(--mut);white-space:nowrap}
+.rng{height:6px;border-radius:3px;background:var(--soft);position:relative;margin-top:8px}
+.rng i{position:absolute;top:0;bottom:0;border-radius:3px;background:linear-gradient(90deg,var(--cool),var(--warm))}
+.grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:28px;align-items:start}
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--soft);border-radius:12px;padding:10px 12px}
+.stat .k{font-size:13px;color:var(--mut)}.stat .v{font:700 24px/1.2 Archivo,sans-serif;white-space:nowrap}
+.stat .s{font-size:13px;color:var(--mut);white-space:nowrap}
+.agree{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:600}
+.a-hi{background:#d8f3e3;color:#11643a}.a-mid{background:#fdf0c9;color:#7a5300}.a-lo{background:#fde0d8;color:#9a2a10}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-size:13px;color:var(--mut);font-weight:500}
+tr.cons td{font-weight:700;background:var(--soft)}
+td small{display:block;color:var(--mut);font-weight:400;font-size:12px}
+.muted{color:var(--mut)}
+.wnd{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.arr{flex:none;display:inline-block;vertical-align:middle}
+.windchip{white-space:normal}.windchip .wnd{white-space:normal}.windchip .arr{width:26px;height:26px}
+.day .wnd .arr{width:18px;height:18px}.day .wnd{font-size:13px}
+.wstrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}
+.wcell{flex:none;scroll-snap-align:start;width:64px;display:grid;justify-items:center;gap:2px;font-size:13px;background:var(--soft);border-radius:10px;padding:8px 4px;white-space:nowrap}
+.wcell b{font-family:Archivo,sans-serif}
+.ocard{border-style:dashed;background:var(--card)}.ocard .hl{opacity:.85}
+.lk{font-size:13px;color:var(--mut);white-space:nowrap;margin-top:2px}
+.ocard .agree{font-size:12px;padding:2px 8px}
+.fig{position:relative;min-height:300px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.fig text{fill:var(--mut);font-size:12px;font-family:Inter,sans-serif}
+.readout{position:absolute;top:0;right:0;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 8px;pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--mut);margin-top:6px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.srcs{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.srcs li{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:10px;align-items:start;font-size:14px}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:6px}
+.ok{background:#21a35b}.bad{background:#c9ced8}
+.method p{max-width:70ch}
+.empty{padding:36px 0;font-size:18px;opacity:.95}
+.scroll{overflow-x:auto}
+footer{font-size:13px;color:var(--mut)}
+@media(max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.hero{grid-template-columns:minmax(0,1fr)}.bigicon{max-width:200px;grid-row:1}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}table{font-size:13px}th,td{padding:8px 5px}}
+@media(prefers-reduced-motion:no-preference){.bigicon svg{animation:bob 6s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-6px)}}}
+</style>
+</head>
+<body>
+<header class="band sky">
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">Consensus Weather</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="seg" role="group" aria-label="Units"><button id="uF" aria-pressed="true">°F</button><button id="uC" aria-pressed="false">°C</button></div>
+        <div class="seg" role="group" aria-label="Averaging"><button id="wS" aria-pressed="true" title="Weight sources by track record">Skill-weighted</button><button id="wE" aria-pressed="false">Equal</button></div>
+      </div>
+    </div>
+    <form class="search" id="search">
+      <input id="q" type="search" placeholder="City or ZIP code" aria-label="City or ZIP code" autocomplete="off">
+      <button class="btn solid" type="submit">Search</button>
+      <button class="btn" type="button" id="geo">Use my location</button>
+      <button class="btn" type="button" id="refresh" hidden>Refresh</button>
+    </form>
+    <div class="results" id="results"></div>
+    <div id="heroBox">
+      <div class="empty">Search for a place. This app pulls forecasts from up to nine weather models and forecasting agencies, then blends them into one consensus forecast.</div>
+    </div>
+    <div class="status" id="status" role="status"></div>
+  </div>
+</header>
+
+<main id="main" hidden>
+  <section class="band"><div class="wrap">
+    <h2>Next 7 days</h2>
+    <div class="days" id="days"></div>
+  </div></section>
+
+  <section class="band" style="padding-top:0"><div class="wrap grid2">
+    <div>
+      <h2 id="dayTitle">Day breakdown</h2>
+      <div class="summary" id="summary"></div>
+      <div class="scroll"><table id="table"></table></div>
+      <p class="muted" style="font-size:13px">When 5 or more sources report, the single highest and lowest values are dropped before averaging, so one outlier model can't skew the result.</p>
+    </div>
+    <div>
+      <h2>Next 48 hours</h2>
+      <div class="fig" id="figwrap"><svg id="chart" role="img" aria-label="Hourly temperature consensus with model range"></svg><div class="readout" id="readout" hidden></div></div>
+      <h2 style="font-size:18px;margin:18px 0 8px">Tailwind direction, every 3 hours</h2>
+      <div class="wstrip" id="wstrip"></div>
+      <div class="legend"><span><i style="background:var(--warm)"></i>Consensus temp</span><span><i style="background:rgba(255,106,61,.2)"></i>Range across sources</span><span><i style="background:var(--cool)"></i>Chance of precip</span></div>
+    </div>
+  </div></section>
+
+  <section class="band" id="outlook" hidden style="padding-top:0"><div class="wrap">
+    <h2>Extended outlook <span class="muted" style="font:500 16px Inter,sans-serif">days 8–16</span></h2>
+    <p class="muted" style="max-width:70ch;margin-top:-4px">Less precise than the 7-day forecast. Each day shows the most likely high and low, plus the range that 80% of ensemble runs fall within. Use it for trends (warmer, cooler, wetter), not exact numbers.</p>
+    <div class="days" id="ocards"></div>
+    <div id="ostatus" class="muted" style="font-size:14px;margin:8px 0"></div>
+    <h2 style="font-size:18px;margin:22px 0 8px">16-day temperature trend</h2>
+    <div class="fig" id="trendwrap" style="min-height:280px"><svg id="trend" role="img" aria-label="16-day temperature trend with likely ranges"></svg></div>
+    <div class="legend"><span><i style="background:var(--warm)"></i>Consensus high</span><span><i style="background:var(--cool)"></i>Consensus low</span><span><i style="background:rgba(255,106,61,.25)"></i>Likely range</span></div>
+  </div></section>
+
+  <section class="band" style="background:var(--soft)"><div class="wrap grid2">
+    <div class="method">
+      <h2>How the consensus is built</h2>
+      <p>Instead of copying other websites, the app goes to the same sources those websites use: the raw output of the world's main forecast models, plus the US National Weather Service's forecaster-edited forecast and MET Norway's forecast.</p>
+      <p><b>Temperatures, wind and amounts</b> use a weighted average with the highest and lowest values dropped. In skill-weighted mode, models with stronger records in global accuracy comparisons (ECMWF first) count for more. MET Norway is built largely on ECMWF data, so it gets a lower weight to avoid counting the same model twice.</p>
+      <p><b>Chance of precipitation</b> is the weighted share of sources that predict measurable precipitation (at least 0.01 in). The NWS adds its own stated probability. This works like an ensemble forecast: if 7 of 9 models show rain, rain is likely.</p>
+      <p><b>Wind arrows</b> point the way the wind is blowing <i>toward</i>, so ride in the arrow's direction for a tailwind and against it for a headwind. Forecasts report where wind comes <i>from</i>, and that's shown in words too. Directions are averaged as vectors. "Shifty" means the sources disagree on the direction.</p>
+      <p><b>Extended outlook</b> (days 8–16) adds ensemble forecasts. ECMWF, NOAA and Canada each re-run their model 20–50 times with slightly different starting conditions. The ensemble average is a better long-range guess than any single run, so it gets extra weight. The spread of all the runs gives the "likely" range. Precipitation chance is the share of runs that turn wet. Confidence drops as the runs spread apart.</p>
+      <p><b>Agreement</b> shows how far apart the sources' daily highs are. A wide spread means the forecast really is uncertain, which is worth knowing before a ride or an event.</p>
+    </div>
+    <div>
+      <h2>Sources this run</h2>
+      <ul class="srcs" id="srcs"></ul>
+    </div>
+  </div></section>
+</main>
+
+<footer class="band"><div class="wrap">Model data from Open-Meteo (ECMWF, NOAA GFS, NBM, HRRR, RRFS and AI-GFS, Google GraphCast, DWD, UK Met Office, Environment Canada, Météo-France, JMA), api.weather.gov (US NWS) and api.met.no (MET Norway). Geocoding by Open-Meteo.</div></footer>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MODELS=[
+  {id:'ecmwf_ifs025',name:'ECMWF IFS',org:'European Centre for Medium-Range Forecasts',w:1.0},
+  {id:'ukmo_seamless',name:'UK Met Office',org:'UKMO global + UK models',w:0.9},
+  {id:'icon_seamless',name:'DWD ICON',org:'German Weather Service',w:0.85},
+  {id:'gfs_global',ids:['gfs_global','ncep_gfs_global','gfs025','gfs_seamless'],name:'NOAA GFS',org:'NOAA global model',w:0.8},
+  {id:'ncep_nbm_conus',name:'NOAA National Blend of Models',org:'NOAA statistically corrected blend · US only, 11 days',w:0.95},
+  {id:'ncep_hrrr_conus',ids:['ncep_hrrr_conus','gfs_hrrr'],name:'NOAA HRRR',org:'NOAA 3 km rapid-refresh · US only, 2 days',w:0.85},
+  {id:'ncep_rrfs_conus',ids:['ncep_rrfs_conus','ncep_rrfs_conus_3km','ncep_rrfs_north_america'],name:'NOAA RRFS',org:'NOAA next-gen rapid-refresh · US, ~3.5 days',w:0.8},
+  {id:'ncep_aigfs025',ids:['ncep_aigfs025','ncep_aigfs','aigfs025'],name:'NOAA AI-GFS',org:'NOAA AI model run on GFS data',w:0.75},
+  {id:'ecmwf_aifs025_single',ids:['ecmwf_aifs025_single','ecmwf_aifs025'],name:'ECMWF AIFS',org:'European Centre AI model',w:0.9},
+  {id:'gem_regional',ids:['gem_regional','cmc_gem_rdps'],name:'Canadian GEM Regional',org:'Environment Canada · North America, 3.5 days',w:0.75},
+  {id:'kma_gdps',ids:['kma_gdps','kma_seamless'],name:'KMA',org:'Korea Meteorological Administration',w:0.7},
+  {id:'bom_access_global',name:'BOM ACCESS-G',org:'Australian Bureau of Meteorology',w:0.65},
+  {id:'cma_grapes_global',name:'CMA GRAPES',org:'China Meteorological Administration',w:0.6},
+  {id:'gem_seamless',name:'Canadian GEM',org:'Environment and Climate Change Canada',w:0.75},
+  {id:'meteofrance_seamless',name:'Météo-France',org:'ARPEGE / AROME',w:0.75},
+  {id:'jma_seamless',name:'JMA',org:'Japan Meteorological Agency',w:0.7}
+];
+// Ensembles: each model re-run many times with slightly different starting conditions — the spread shows how uncertain the outlook is
+const ENS=[
+  {id:'ecmwf_ifs025',name:'ECMWF ensemble',w:1.0},
+  {id:'gfs_seamless',name:'NOAA GEFS ensemble',w:0.8},
+  {id:'gem_global',name:'Canadian GEPS ensemble',w:0.75}
+];
+const NWS={id:'nws',name:'National Weather Service',org:'NOAA human forecasters (US only)',w:0.95};
+const METNO={id:'metno',name:'MET Norway',org:'Norwegian Meteorological Institute',w:0.6};
+const load=k=>{try{return JSON.parse(localStorage.getItem('cw_'+k))}catch(e){return null}};
+const save=(k,v)=>{try{localStorage.setItem('cw_'+k,JSON.stringify(v))}catch(e){}};
+const S={unit:load('unit')||'F',weighted:load('weighted')!==false,loc:null,sources:[],ens:[],out:[],off:0,sel:null,days:[],hours:[]};
+
+const T=c=>c==null?null:S.unit==='F'?c*9/5+32:c;
+const fT=c=>c==null?'–':Math.round(T(c))+'°';
+const fW=k=>k==null?'–':S.unit==='F'?Math.round(k/1.609)+' mph':Math.round(k)+' km/h';
+const fP=mm=>mm==null?'–':S.unit==='F'?(mm/25.4).toFixed(2)+' in':mm.toFixed(1)+' mm';
+const fPct=v=>v==null?'–':Math.round(v*100)+'%';
+const dT=d=>S.unit==='F'?d*9/5:d;
+const wt=s=>S.weighted?s.w:1;
+const addDay=(d,n)=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)};
+const localIso=ms=>new Date(ms+S.off*1000).toISOString();
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function j(url,ms=15000){
+  for(let a=0;;a++){
+    const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),ms);
+    try{
+      const r=await fetch(url,{signal:ctl.signal});
+      if(r.status===429&&a<4){clearTimeout(t);await sleep(1500*(a+1)+Math.random()*800);continue} // rate-limited: wait and retry
+      if(!r.ok)throw new Error(r.status===429?'busy, try Refresh':'HTTP '+r.status);
+      return await r.json();
+    }catch(e){throw new Error(e.name==='AbortError'?'timed out':e.message)}
+    finally{clearTimeout(t)}
+  }
+}
+// Open-Meteo turns away bursts, so run at most 4 of its requests at once
+let active=0;const queue=[];
+function limit(fn){return new Promise((res,rej)=>{const run=()=>{active++;fn().then(res,rej).finally(()=>{active--;if(queue.length)queue.shift()()})};active<4?run():queue.push(run)})}
+
+async function om(m,lat,lon){
+  let last;
+  for(const id of m.ids||[m.id]){try{return await om1(m,id,lat,lon)}catch(e){last=e}}
+  throw last;
+}
+async function om1(m,id,lat,lon){
+  const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&models=${id}&timezone=auto&forecast_days=16`+
+    `&hourly=temperature_2m,precipitation,wind_speed_10m,wind_direction_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,wind_direction_10m_dominant&current=apparent_temperature,relative_humidity_2m`;
+  const d=await limit(()=>j(u,25000));
+  const src={...m,daily:{},hourly:{},cur:d.current||null,tz:d.timezone,off:d.utc_offset_seconds};
+  const D=d.daily||{};(D.time||[]).forEach((t,i)=>{const hi=D.temperature_2m_max[i];if(hi==null)return;
+    src.daily[t]={hi,lo:D.temperature_2m_min[i],p:D.precipitation_sum[i],wind:D.wind_speed_10m_max[i],dir:D.wind_direction_10m_dominant?D.wind_direction_10m_dominant[i]:null,code:D.weather_code[i]}});
+  const H=d.hourly||{};(H.time||[]).forEach((t,i)=>{const v=H.temperature_2m[i];if(v==null)return;
+    src.hourly[t.slice(0,13)]={t:v,p:H.precipitation[i],wind:H.wind_speed_10m[i],dir:H.wind_direction_10m?H.wind_direction_10m[i]:null}});
+  // short-range models end mid-day: drop days without a full set of hours so a partial day can't fake a low high
+  const cnt={};for(const k in src.hourly){const dd=k.slice(0,10);cnt[dd]=(cnt[dd]||0)+1}
+  for(const dd in src.daily)if((cnt[dd]||0)<22)delete src.daily[dd];
+  if(!Object.keys(src.daily).length)throw new Error(/conus|hrrr|rrfs|nbm/.test(id)?'US locations only':'no coverage here');
+  return src;
+}
+
+async function ens(m,lat,lon){
+  const d=await limit(()=>j(`https://ensemble-api.open-meteo.com/v1/ensemble?latitude=${lat}&longitude=${lon}&models=${m.id}&timezone=auto&forecast_days=16&hourly=temperature_2m,precipitation`,30000));
+  const H=d.hourly||{},time=H.time||[],members=[];let last='';
+  for(const k of Object.keys(H)){
+    const mm=k.match(/^temperature_2m(_member\d+)?$/);if(!mm)continue;
+    const suf=mm[1]||'',Tv=H[k],P=H['precipitation'+suf]||[],days={};
+    time.forEach((t,i)=>{const v=Tv[i];if(v==null)return;const dt=t.slice(0,10);
+      const D=days[dt]||(days[dt]={hi:-1e9,lo:1e9,p:0,n:0,pn:0});
+      D.hi=Math.max(D.hi,v);D.lo=Math.min(D.lo,v);D.n++;if(P[i]!=null){D.p+=P[i];D.pn++}});
+    const daily={};for(const [dt,D] of Object.entries(days))if(D.n>=4){daily[dt]={hi:D.hi,lo:D.lo,p:D.pn?D.p:null};if(dt>last)last=dt}
+    members.push({daily});
+  }
+  if(!members.length)throw new Error('no ensemble data here');
+  const end=last?new Date(last+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric'}):'';
+  return {...m,org:`${members.length} runs, out to ${end} · used for the outlook`,members};
+}
+function wpct(a,q){
+  a=a.filter(x=>x.v!=null&&isFinite(x.v)).sort((x,y)=>x.v-y.v);if(!a.length)return null;
+  const W=a.reduce((s,x)=>s+x.w,0);let c=0;for(const x of a){c+=x.w;if(c>=q*W)return x.v}return a[a.length-1].v;
+}
+
+async function nws(lat,lon){
+  const pt=await j(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`).catch(e=>{throw new Error(/404/.test(e.message)?'US locations only':e.message)});
+  const pr=pt.properties;
+  const [f,h]=await Promise.all([j(pr.forecast),j(pr.forecastHourly)]);
+  const src={...NWS,daily:{},hourly:{},place:pr.relativeLocation&&pr.relativeLocation.properties};
+  const toC=(v,u)=>v==null?null:u==='F'?(v-32)*5/9:v;
+  const wind=s=>{const n=(String(s||'').match(/\d+/g)||[]).map(Number);return n.length?Math.max(...n)*1.609:null};
+  for(const p of f.properties.periods){
+    const date=p.startTime.slice(0,10),c=toC(p.temperature,p.temperatureUnit),pop=p.probabilityOfPrecipitation?p.probabilityOfPrecipitation.value:null;
+    const d=src.daily[date]||(src.daily[date]={});
+    if(pop!=null)d.pop=Math.max(d.pop||0,pop);
+    if(p.isDaytime){d.hi=c;d.wind=wind(p.windSpeed);d.dir=cdeg(p.windDirection)}
+    else{const n=addDay(date,1);(src.daily[n]||(src.daily[n]={})).lo=c}
+  }
+  for(const p of h.properties.periods){
+    const pop=p.probabilityOfPrecipitation?p.probabilityOfPrecipitation.value:null;
+    src.hourly[p.startTime.slice(0,13)]={t:toC(p.temperature,p.temperatureUnit),wind:wind(p.windSpeed),dir:cdeg(p.windDirection),pop};
+  }
+  return src;
+}
+
+async function metno(lat,lon){
+  const d=await j(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`);
+  return {...METNO,raw:d.properties.timeseries,daily:{},hourly:{}};
+}
+function finishMetno(src){
+  const days={};
+  for(const e of src.raw){
+    const iso=localIso(Date.parse(e.time)),date=iso.slice(0,10);
+    const det=e.data.instant.details,n1=e.data.next_1_hours,n6=e.data.next_6_hours;
+    const D=days[date]||(days[date]={t:[],p:0,w:[],d:[]});
+    D.t.push(det.air_temperature);D.w.push(det.wind_speed*3.6);D.d.push({d:det.wind_from_direction,w:det.wind_speed});
+    if(n1){const p=n1.details.precipitation_amount;D.p+=p||0;src.hourly[iso.slice(0,13)]={t:det.air_temperature,p,wind:det.wind_speed*3.6,dir:det.wind_from_direction}}
+    else if(n6)D.p+=n6.details.precipitation_amount||0;
+  }
+  // only trust full days of hourly data (6-hourly samples miss the true high/low)
+  for(const [date,D] of Object.entries(days))if(D.t.length>=20)src.daily[date]={hi:Math.max(...D.t),lo:Math.min(...D.t),p:D.p,wind:Math.max(...D.w),dir:(dirBlend(D.d)||{}).v};
+  delete src.raw;
+}
+
+function blend(arr){
+  arr=arr.filter(a=>a.v!=null&&isFinite(a.v));if(!arr.length)return null;
+  const vs=arr.map(a=>a.v),min=Math.min(...vs),max=Math.max(...vs);
+  const use=arr.length>=5?[...arr].sort((a,b)=>a.v-b.v).slice(1,-1):arr;
+  const W=use.reduce((s,a)=>s+a.w,0);
+  return {v:use.reduce((s,a)=>s+a.v*a.w,0)/W,min,max,n:arr.length};
+}
+// Wind directions are angles, so average them as vectors (350° and 10° average to 0°, not 180°)
+function dirBlend(arr){
+  arr=arr.filter(a=>a.d!=null&&isFinite(a.d)&&a.w>0);if(!arr.length)return null;
+  let x=0,y=0,W=0;for(const a of arr){const r=a.d*Math.PI/180;x+=Math.sin(r)*a.w;y+=Math.cos(r)*a.w;W+=a.w}
+  return {v:(Math.atan2(x,y)*180/Math.PI+360)%360,R:Math.hypot(x,y)/W,n:arr.length};
+}
+const PTS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const LONG=['north','north-northeast','northeast','east-northeast','east','east-southeast','southeast','south-southeast','south','south-southwest','southwest','west-southwest','west','west-northwest','northwest','north-northwest'];
+function cdeg(s){const i=PTS.indexOf(String(s||'').trim().toUpperCase());return i<0?null:i*22.5}
+const idx=d=>Math.round(((d%360)+360)%360/22.5)%16;
+const compass=d=>PTS[idx(d)];
+const longDir=d=>LONG[idx(d)];
+const toward=from=>(from+180)%360;
+function arrow(to,size=22,col='currentColor'){
+  return `<svg class="arr" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(${to.toFixed(0)} 12 12)"><path d="M12 2l7 10h-4.5v10h-5V12H5z" fill="${col}"/></g></svg>`;
+}
+// one wind reading: arrow pointing the way to ride for a tailwind + words
+function windTxt(sp,dr,long){
+  if(!dr)return fW(sp&&sp.v);
+  const to=toward(dr.v),calm=sp&&sp.v<3;
+  const words=long?`Tailwind riding ${longDir(to)} (${compass(to)}) · wind from ${compass(dr.v)}`:`→ ${compass(to)}`;
+  return `<span class="wnd" title="Wind from ${compass(dr.v)} (${Math.round(dr.v)}°). Ride toward ${compass(to)} for a tailwind.${dr.R<.5?' Sources disagree on direction.':''}">${calm?'':arrow(to)}<span>${fW(sp&&sp.v)} ${calm?'· calm':words}${dr.R<.5&&!calm?' · shifty':''}</span></span>`;
+}
+const grp=c=>c<=1?'sun':c===2?'partly':c===3?'cloud':(c===45||c===48)?'fog':((c>=71&&c<=77)||c===85||c===86)?'snow':c>=95?'storm':'rain';
+const WORD={sun:'Sunny',partly:'Partly cloudy',cloud:'Cloudy',fog:'Foggy',rain:'Rain likely',snow:'Snow likely',storm:'Thunderstorms'};
+const wet=c=>c==='rain'||c==='snow'||c==='storm';
+
+function dayCons(date){
+  const src=S.sources.filter(s=>s.ok&&s.daily[date]);
+  const pick=k=>src.map(s=>({v:s.daily[date][k],w:wt(s)}));
+  const hi=blend(pick('hi')),lo=blend(pick('lo')),p=blend(pick('p')),wind=blend(pick('wind'));
+  const dir=dirBlend(src.map(s=>({d:s.daily[date].dir,w:wt(s)})));
+  let vs=0,vw=0;
+  for(const s of src){const d=s.daily[date];const v=d.pop!=null?d.pop/100:d.p!=null?(d.p>=0.25?1:0):null;if(v!=null){vs+=v*wt(s);vw+=wt(s)}}
+  const chance=vw?vs/vw:null;
+  const g={};for(const s of src){const c=s.daily[date].code;if(c!=null){const k=grp(c);g[k]=(g[k]||0)+wt(s)}}
+  let cond=Object.keys(g).sort((a,b)=>g[b]-g[a])[0]||'cloud';
+  if(chance!=null){if(chance>=.5&&!wet(cond))cond=hi&&hi.v<1?'snow':'rain';if(chance<.25&&wet(cond))cond='partly'}
+  return {date,hi,lo,p,wind,dir,chance,cond,src};
+}
+// Outlook: deterministic models + ensemble means (ensemble mean is the better long-range guess), range from pooled ensemble runs
+function outlookCons(date){
+  const b=dayCons(date);
+  const E=S.ens.filter(e=>e.ok).map(e=>({e,m:e.members.map(m=>m.daily[date]).filter(Boolean)})).filter(x=>x.m.length);
+  if(!E.length)return {...b,hiR:null,loR:null,ensN:0};
+  const mean=(arr,k)=>{const v=arr.map(x=>x[k]).filter(v=>v!=null);return v.length?v.reduce((s,a)=>s+a,0)/v.length:null};
+  const EW=x=>wt(x.e)*1.5;
+  const mix=k=>[...b.src.map(s=>({v:s.daily[date][k],w:wt(s)})),...E.map(x=>({v:mean(x.m,k),w:EW(x)}))];
+  const pool=k=>E.flatMap(x=>x.m.map(m=>({v:m[k],w:wt(x.e)/x.m.length})));
+  const hiR=[wpct(pool('hi'),.1),wpct(pool('hi'),.9)],loR=[wpct(pool('lo'),.1),wpct(pool('lo'),.9)];
+  let cs=0,cw=0;
+  for(const x of E){const pm=x.m.filter(m=>m.p!=null);if(!pm.length)continue;cs+=pm.filter(m=>m.p>=0.25).length/pm.length*EW(x);cw+=EW(x)}
+  if(b.chance!=null){const dw=b.src.reduce((s,x)=>s+wt(x),0)*.5;cs+=b.chance*dw;cw+=dw}
+  const chance=cw?cs/cw:b.chance,hi=blend(mix('hi'));
+  let cond=b.src.length?b.cond:(chance>=.3?'cloud':'partly');
+  if(chance!=null){if(chance>=.5&&!wet(cond))cond=hi&&hi.v<1?'snow':'rain';if(chance<.25&&wet(cond))cond='partly'}
+  return {...b,hi,lo:blend(mix('lo')),p:blend(mix('p')),hiR,loR,chance,cond,ensN:E.reduce((s,x)=>s+x.m.length,0)};
+}
+function conf(d){
+  const sp=d.hiR&&d.hiR[0]!=null?d.hiR[1]-d.hiR[0]:d.hi&&d.hi.n>1?d.hi.max-d.hi.min:null;
+  if(sp==null)return '';
+  const [c,w]=sp<3?['a-hi','Fair confidence']:sp<6?['a-mid','Low confidence']:['a-lo','Very low confidence'];
+  return `<span class="agree ${c}">${w}</span>`;
+}
+function hourCons(key){
+  const src=S.sources.filter(s=>s.ok&&s.hourly[key]);
+  const t=blend(src.map(s=>({v:s.hourly[key].t,w:wt(s)}))),wind=blend(src.map(s=>({v:s.hourly[key].wind,w:wt(s)})));
+  const dir=dirBlend(src.map(s=>({d:s.hourly[key].dir,w:wt(s)})));
+  let vs=0,vw=0;for(const s of src){const h=s.hourly[key];const v=h.pop!=null?h.pop/100:h.p!=null?(h.p>=0.1?1:0):null;if(v!=null){vs+=v*wt(s);vw+=wt(s)}}
+  return {key,t,wind,dir,chance:vw?vs/vw:null};
+}
+function agreement(r){
+  if(!r||r.n<2)return '';const sp=r.max-r.min;
+  const [c,w]=sp<=2?['a-hi','High agreement']:sp<=4.5?['a-mid','Moderate agreement']:['a-lo','Low agreement'];
+  return `<span class="agree ${c}">${w} · ±${Math.round(dT(sp)/2)}°</span>`;
+}
+
+function icon(c){
+  const rays=[0,45,90,135,180,225,270,315].map(a=>{const r=a*Math.PI/180;return `<line x1="${(38+Math.cos(r)*23).toFixed(1)}" y1="${(36+Math.sin(r)*23).toFixed(1)}" x2="${(38+Math.cos(r)*30).toFixed(1)}" y2="${(36+Math.sin(r)*30).toFixed(1)}"/>`}).join('');
+  const sun=(x=0,y=0)=>`<g transform="translate(${x} ${y})"><circle cx="38" cy="36" r="16" fill="#ffc83d"/><circle cx="33" cy="31" r="6" fill="#ffe08a"/><g stroke="#ffc83d" stroke-width="4" stroke-linecap="round">${rays}</g></g>`;
+  const cloud=(x=0,y=0,o=1,f='var(--cloud)')=>`<path transform="translate(${x} ${y})" opacity="${o}" d="M30 78h44a16 16 0 0 0 0-32 22 22 0 0 0-42-4 18 18 0 0 0-2 36z" fill="${f}"/>`;
+  const drops=[[40,88],[56,92],[72,88]].map(([x,y])=>`<line x1="${x}" y1="${y}" x2="${x-4}" y2="${y+8}" stroke="#22a3d8" stroke-width="4" stroke-linecap="round"/>`).join('');
+  const flakes=[[40,90],[56,94],[72,90]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="3.5" fill="#bfe3ff"/>`).join('');
+  const body={
+    sun:sun(17,14),
+    partly:sun(0,0)+cloud(16,6),
+    cloud:cloud(-6,-10,.7)+cloud(10,2),
+    fog:cloud(4,-8,.8)+[78,86,94].map(y=>`<line x1="22" x2="90" y1="${y}" y2="${y}" stroke="var(--cloud)" stroke-width="4" stroke-linecap="round"/>`).join(''),
+    rain:cloud(4,-6)+drops,
+    snow:cloud(4,-6)+flakes,
+    storm:cloud(4,-8,1,'#7d8aa0')+`<path d="M58 70l-10 16h9l-6 14 16-20h-9l6-10z" fill="#ffc83d"/>`
+  }[c]||cloud(4,0);
+  return `<svg viewBox="0 0 110 104" aria-hidden="true">${body}</svg>`;
+}
+
+function render(){
+  const today=localIso(Date.now()).slice(0,10);
+  const dates=[...new Set(S.sources.filter(s=>s.ok).flatMap(s=>Object.keys(s.daily)))].filter(d=>d>=today).sort().slice(0,7);
+  S.days=dates.map(dayCons).filter(d=>d.hi||d.lo);
+  if(!S.sel||!dates.includes(S.sel))S.sel=dates[0];
+  const nowKey=localIso(Date.now()).slice(0,13);
+  const base=Date.parse(nowKey.slice(0,10)+'T'+nowKey.slice(11,13)+':00:00Z')-S.off*1000;
+  S.hours=Array.from({length:48},(_,i)=>hourCons(localIso(base+i*3600e3).slice(0,13)));
+  const cur=S.hours[0],td=S.days[0]||{};
+  const oms=S.sources.filter(s=>s.ok&&s.cur);
+  const feels=blend(oms.map(s=>({v:s.cur.apparent_temperature,w:wt(s)}))),rh=blend(oms.map(s=>({v:s.cur.relative_humidity_2m,w:wt(s)})));
+  const ok=S.sources.filter(s=>s.ok).length;
+  $('#heroBox').innerHTML=`<div class="hero"><div>
+    <div class="place">${esc(S.loc.label)}</div>
+    <div class="now num">${fT(cur.t&&cur.t.v)}</div>
+    <div class="cond">${WORD[td.cond]||''} · High ${fT(td.hi&&td.hi.v)} / Low ${fT(td.lo&&td.lo.v)}</div>
+    <div class="chips">
+      <span class="chip">Feels like <b>${fT(feels&&feels.v)}</b></span>
+      <span class="chip">Humidity <b>${rh?Math.round(rh.v)+'%':'–'}</b></span>
+      <span class="chip windchip">${windTxt(cur.wind,cur.dir,true)}</span>
+      <span class="chip">Precip today <b>${fPct(td.chance)}</b></span>
+      <span class="chip">Sources now <b>${cur.t?cur.t.n:0}</b> · range ${cur.t?fT(cur.t.min)+'–'+fT(cur.t.max):'–'}</span>
+    </div></div>
+    <div class="bigicon">${icon(td.cond)}</div></div>`;
+  const fail=S.sources.filter(s=>!s.ok&&!nocov(s)).length;
+  $('#status').textContent=`${ok} sources blended${fail?` · ${fail} unavailable (try Refresh)`:''} · updated ${new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`;
+  const all=S.days.flatMap(d=>[d.lo&&d.lo.v,d.hi&&d.hi.v]).filter(v=>v!=null),mn=Math.min(...all),mx=Math.max(...all),sp=(mx-mn)||1;
+  $('#days').innerHTML=S.days.map((d,i)=>{const dt=new Date(d.date+'T12:00:00');
+    const l=d.lo?d.lo.v:mn,h=d.hi?d.hi.v:mx;
+    return `<button class="day" data-d="${d.date}" aria-pressed="${d.date===S.sel}">
+      <div class="dn">${i===0?'Today':dt.toLocaleDateString([],{weekday:'short'})}</div><div class="dd">${dt.toLocaleDateString([],{month:'short',day:'numeric'})}</div>
+      ${icon(d.cond)}<div class="hl"><span class="h">${fT(d.hi&&d.hi.v)}</span><span class="l">${fT(d.lo&&d.lo.v)}</span></div>
+      <div class="rain">${fPct(d.chance)} precip</div>
+      <div class="rain">${windTxt(d.wind,d.dir,false)}</div>
+      <div class="rng"><i style="left:${(l-mn)/sp*100}%;right:${100-(h-mn)/sp*100}%"></i></div></button>`}).join('');
+  $('#wstrip').innerHTML=S.hours.filter((h,i)=>i%3===0).map(h=>{const hr=+h.key.slice(11,13);
+    const t=hr===0?new Date(h.key.slice(0,10)+'T12:00:00').toLocaleDateString([],{weekday:'short'}):(hr%12||12)+(hr<12?'a':'p');
+    const calm=!h.wind||h.wind.v<3;
+    return `<div class="wcell"><div class="muted">${t}</div>${h.dir&&!calm?arrow(toward(h.dir.v),30,'var(--sky1)'):'<div style="height:30px;line-height:30px">calm</div>'}<b>${h.dir&&!calm?compass(toward(h.dir.v)):'–'}</b><span class="muted">${fW(h.wind&&h.wind.v)}</span></div>`}).join('');
+  renderDay();renderSources();drawChart();renderOutlook();
+  $('#main').hidden=false;$('#refresh').hidden=false;
+}
+
+function renderDay(){
+  const d=S.days.find(x=>x.date===S.sel);if(!d)return;
+  const dt=new Date(d.date+'T12:00:00');
+  $('#dayTitle').innerHTML=`${dt.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})} ${agreement(d.hi)}`;
+  const st=(k,v,s)=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  $('#summary').innerHTML=
+    st('High',fT(d.hi&&d.hi.v),d.hi?`range ${fT(d.hi.min)}–${fT(d.hi.max)}`:'')+
+    st('Low',fT(d.lo&&d.lo.v),d.lo?`range ${fT(d.lo.min)}–${fT(d.lo.max)}`:'')+
+    st('Precip chance',fPct(d.chance),d.p?`≈ ${fP(d.p.v)} expected`:'')+
+    st('Peak wind',fW(d.wind&&d.wind.v),d.dir?`${arrow(toward(d.dir.v),16)} tailwind → ${compass(toward(d.dir.v))}`:'');
+  const rows=d.src.map(s=>{const x=s.daily[d.date];
+    const sig=x.pop!=null?x.pop+'%':x.p!=null?(x.p>=0.25?'Yes':'No'):'–';
+    const w=x.dir!=null?windTxt({v:x.wind},{v:x.dir,R:1},false):fW(x.wind);
+    return `<tr><td>${esc(s.name)}<small>${esc(s.org)}</small></td><td>${fT(x.hi)}</td><td>${fT(x.lo)}</td><td>${fP(x.p)}</td><td>${w}</td><td>${sig}</td><td>${wt(s).toFixed(2)}</td></tr>`}).join('');
+  $('#table').innerHTML=`<thead><tr><th>Source</th><th>High</th><th>Low</th><th>Precip</th><th>Wind (tailwind)</th><th>Wet?</th><th>Weight</th></tr></thead>
+    <tbody><tr class="cons"><td>Consensus</td><td>${fT(d.hi&&d.hi.v)}</td><td>${fT(d.lo&&d.lo.v)}</td><td>${fP(d.p&&d.p.v)}</td><td>${windTxt(d.wind,d.dir,false)}</td><td>${fPct(d.chance)}</td><td></td></tr>${rows}</tbody>`;
+}
+
+function renderOutlook(){
+  const today=localIso(Date.now()).slice(0,10);
+  const dates=[...new Set([...S.sources.filter(s=>s.ok).flatMap(s=>Object.keys(s.daily)),...S.ens.filter(e=>e.ok).flatMap(e=>Object.keys(e.members[0].daily))])].filter(d=>d>=today).sort().slice(0,16);
+  S.out=dates.map(outlookCons).filter(d=>d.hi&&d.lo);
+  const ext=S.out.slice(7);
+  $('#outlook').hidden=!ext.length;
+  const rng=r=>r&&r[0]!=null?`${Math.round(T(r[0]))}–${fT(r[1])}`:'–';
+  $('#ocards').innerHTML=ext.map(d=>{const dt=new Date(d.date+'T12:00:00');
+    return `<div class="day ocard"><div class="dn">${dt.toLocaleDateString([],{weekday:'short'})}</div><div class="dd">${dt.toLocaleDateString([],{month:'short',day:'numeric'})}</div>
+      ${icon(d.cond)}<div class="hl"><span class="h">${fT(d.hi.v)}</span><span class="l">${fT(d.lo.v)}</span></div>
+      <div class="lk">High likely ${d.hiR?rng(d.hiR):fT(d.hi.min)+'–'+fT(d.hi.max)}</div>
+      <div class="rain">${fPct(d.chance)} precip</div>
+      <div class="rain">${windTxt(d.wind,d.dir,false)}</div>
+      <div style="margin-top:8px">${conf(d)}</div></div>`}).join('');
+  const ok=S.ens.filter(e=>e.ok);
+  $('#ostatus').textContent=S.ensLoading?'Loading ensemble runs for a better outlook…':ok.length?`Blended from ${ok.reduce((s,e)=>s+e.members.length,0)} ensemble runs across ${ok.length} models, plus each model's main forecast.`:'Ensemble data unavailable, so this shows the main model forecasts only. Ranges are the spread between models.';
+  drawTrend();
+}
+const tsvg=$('#trend'),tfig=$('#trendwrap');
+function drawTrend(){
+  const W=tsvg.clientWidth,H=tsvg.clientHeight,D=S.out||[];if(!W||D.length<2){tsvg.innerHTML='';return}
+  const pl=36,pr=10,pt=22,pb=28,n=D.length;
+  const R=(d,k)=>d[k+'R']&&d[k+'R'][0]!=null?d[k+'R']:[d[k].min,d[k].max];
+  const vals=D.flatMap(d=>[...R(d,'hi'),...R(d,'lo'),d.hi.v,d.lo.v]).map(T);
+  const lo=Math.floor(Math.min(...vals)-1),hi=Math.ceil(Math.max(...vals)+1);
+  const x=i=>pl+i*(W-pl-pr)/(n-1),y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);
+  const band=(k,f)=>`<polygon fill="${f}" points="${D.map((d,i)=>`${x(i).toFixed(1)},${y(T(R(d,k)[1])).toFixed(1)}`).join(' ')} ${D.map((d,i)=>[i,d]).reverse().map(([i,d])=>`${x(i).toFixed(1)},${y(T(R(d,k)[0])).toFixed(1)}`).join(' ')}"/>`;
+  const line=(k,c)=>`<polyline fill="none" stroke="${c}" stroke-width="3" stroke-linejoin="round" points="${D.map((d,i)=>`${x(i).toFixed(1)},${y(T(d[k].v)).toFixed(1)}`).join(' ')}"/>`;
+  let g='';
+  for(let k=0;k<=3;k++){const v=lo+(hi-lo)*k/3,yy=y(v);g+=`<line x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}" stroke="var(--line)"/><text x="${pl-6}" y="${yy+4}" text-anchor="end">${Math.round(v)}°</text>`}
+  const step=W<520?2:1;
+  D.forEach((d,i)=>{if(i%step)return;const dt=new Date(d.date+'T12:00:00');g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${W<520?dt.getDate():dt.toLocaleDateString([],{weekday:'short'}).slice(0,2)+' '+dt.getDate()}</text>`});
+  if(n>7){const xd=(x(6)+x(7))/2;g+=`<rect x="${xd}" y="${pt}" width="${W-pr-xd}" height="${H-pt-pb}" fill="var(--soft)" opacity=".6"/><line x1="${xd}" x2="${xd}" y1="${pt-8}" y2="${H-pb}" stroke="var(--mut)" stroke-dasharray="4 4"/><text x="${xd+6}" y="${pt-8}">Outlook, less certain</text><text x="${xd-6}" y="${pt-8}" text-anchor="end">7-day</text>`}
+  tsvg.innerHTML=g+band('hi','rgba(255,106,61,.2)')+band('lo','rgba(34,163,216,.2)')+line('hi','var(--warm)')+line('lo','var(--cool)');
+}
+const trendObs=new ResizeObserver(drawTrend);trendObs.observe(tfig);
+
+const nocov=s=>!s.ok&&/US locations only|no coverage/.test(s.err||'');
+function renderSources(){
+  const all=[...S.sources,...S.ens],out=all.filter(nocov);
+  $('#srcs').innerHTML=all.filter(s=>!nocov(s)).map(s=>`<li><span class="dot ${s.ok?'ok':'bad'}"></span><span><b>${esc(s.name)}</b><br><span class="muted">${esc(s.ok?s.org:'Unavailable: '+s.err)}</span></span><span class="muted">${s.ok?'weight '+wt(s).toFixed(2):''}</span></li>`).join('')+
+    (out.length?`<li><span></span><span class="muted">Regional models that don't cover this location: ${out.map(s=>esc(s.name)).join(', ')}</span><span></span></li>`:'');
+}
+
+const fig=$('#figwrap'),svg=$('#chart'),ro_=$('#readout');
+function drawChart(){
+  const W=svg.clientWidth,H=svg.clientHeight;if(!W||!S.hours.length)return;
+  const hs=S.hours,n=hs.length,pl=36,pr=10,pt=14,pb=26,ph=Math.round(H*.2),tH=H-pt-pb-ph-14;
+  const vals=hs.filter(h=>h.t).flatMap(h=>[T(h.t.min),T(h.t.max)]);if(vals.length<2){svg.innerHTML='';return}
+  const lo=Math.floor(Math.min(...vals)-1),hi=Math.ceil(Math.max(...vals)+1);
+  const x=i=>pl+i*(W-pl-pr)/(n-1),y=v=>pt+(hi-v)/(hi-lo)*tH,yb=H-pb;
+  const pts=hs.map((h,i)=>h.t?[i,h.t]:null).filter(Boolean);
+  const band=pts.map(([i,t])=>`${x(i).toFixed(1)},${y(T(t.max)).toFixed(1)}`).join(' ')+' '+pts.slice().reverse().map(([i,t])=>`${x(i).toFixed(1)},${y(T(t.min)).toFixed(1)}`).join(' ');
+  const line=pts.map(([i,t])=>`${x(i).toFixed(1)},${y(T(t.v)).toFixed(1)}`).join(' ');
+  let g='';
+  for(let k=0;k<=3;k++){const v=lo+(hi-lo)*k/3,yy=y(v);g+=`<line x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}" stroke="var(--line)"/><text x="${pl-6}" y="${yy+4}" text-anchor="end">${Math.round(v)}°</text>`}
+  const bw=Math.max(2,(W-pl-pr)/n-2);
+  hs.forEach((h,i)=>{if(h.chance)g+=`<rect x="${x(i)-bw/2}" y="${yb-h.chance*ph}" width="${bw}" height="${h.chance*ph}" rx="1.5" fill="var(--cool)" opacity=".75"/>`});
+  g+=`<line x1="${pl}" x2="${W-pr}" y1="${yb}" y2="${yb}" stroke="var(--line)"/>`;
+  const step=W<520?12:6;
+  hs.forEach((h,i)=>{const hr=+h.key.slice(11,13);if(hr%step)return;
+    const lab=hr===0?new Date(h.key.slice(0,10)+'T12:00:00').toLocaleDateString([],{weekday:'short'}):(hr%12||12)+(hr<12?'a':'p');
+    g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${lab}</text>`;
+    if(hr===0)g+=`<line x1="${x(i)}" x2="${x(i)}" y1="${pt}" y2="${yb}" stroke="var(--line)" stroke-dasharray="3 3"/>`});
+  svg.innerHTML=g+`<polygon points="${band}" fill="rgba(255,106,61,.18)"/><polyline points="${line}" fill="none" stroke="var(--warm)" stroke-width="3" stroke-linejoin="round"/><line id="cur" y1="${pt}" y2="${yb}" stroke="var(--mut)" visibility="hidden"/>`;
+  svg.onpointermove=e=>{const r=svg.getBoundingClientRect(),i=Math.max(0,Math.min(n-1,Math.round((e.clientX-r.left-pl)/((W-pl-pr)/(n-1)))));const h=hs[i];if(!h.t)return;
+    const c=svg.querySelector('#cur');c.setAttribute('x1',x(i));c.setAttribute('x2',x(i));c.setAttribute('visibility','visible');
+    const hr=+h.key.slice(11,13);ro_.hidden=false;
+    ro_.textContent=`${new Date(h.key.slice(0,10)+'T12:00:00').toLocaleDateString([],{weekday:'short'})} ${(hr%12||12)}${hr<12?'am':'pm'} · ${fT(h.t.v)} (${fT(h.t.min)}–${fT(h.t.max)}) · ${fPct(h.chance)} precip${h.dir?` · tailwind → ${compass(toward(h.dir.v))} (wind from ${compass(h.dir.v)})`:''}`};
+  svg.onpointerleave=()=>{ro_.hidden=true;const c=svg.querySelector('#cur');if(c)c.setAttribute('visibility','hidden')};
+}
+const chartObs=new ResizeObserver(drawChart);chartObs.observe(fig);
+
+async function loadLoc(loc){
+  S.loc=loc;save('loc',loc);$('#results').innerHTML='';
+  $('#status').textContent=`Gathering forecasts for ${loc.label} from ${MODELS.length+2} sources…`;
+  const jobs=[...MODELS.map(m=>om(m,loc.lat,loc.lon)),nws(loc.lat,loc.lon),metno(loc.lat,loc.lon)];
+  const meta=[...MODELS,NWS,METNO];
+  const res=await Promise.allSettled(jobs);
+  if(S.loc!==loc)return;
+  S.sources=res.map((r,i)=>r.status==='fulfilled'?{...r.value,ok:true}:{...meta[i],ok:false,err:r.reason&&r.reason.message||'failed',daily:{},hourly:{}});
+  const first=S.sources.find(s=>s.ok&&s.off!=null);
+  if(!first){$('#status').textContent='Could not reach the weather services. Check your internet connection and open this file in a normal browser window.';return}
+  S.off=first.off;
+  const mn=S.sources.find(s=>s.id==='metno'&&s.ok);if(mn)finishMetno(mn);
+  const nw=S.sources.find(s=>s.id==='nws'&&s.ok);
+  if(loc.gps&&nw&&nw.place){loc.label=`${nw.place.city}, ${nw.place.state}`;save('loc',loc)}
+  S.ens=[];S.ensLoading=true;render();
+  const er=await Promise.allSettled(ENS.map(m=>ens(m,loc.lat,loc.lon)));
+  if(S.loc!==loc)return;
+  S.ens=er.map((r,i)=>r.status==='fulfilled'?{...r.value,ok:true}:{...ENS[i],org:'',ok:false,err:r.reason&&r.reason.message||'failed',members:[]});
+  S.ensLoading=false;renderOutlook();renderSources();
+}
+
+$('#search').addEventListener('submit',async e=>{
+  e.preventDefault();const q=$('#q').value.trim();if(!q)return;
+  $('#status').textContent='Searching…';
+  try{
+    const zip=/^\d{5}$/.test(q);
+    const d=await j(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json${zip?'&countryCode=US':''}`);
+    const r=d.results||[];
+    if(!r.length){$('#status').textContent='No matches. Try "City, State" or a ZIP code.';return}
+    const mk=x=>({lat:x.latitude,lon:x.longitude,label:[x.name,x.admin1,x.country_code==='US'?'':x.country].filter(Boolean).join(', ')});
+    if(r.length===1){loadLoc(mk(r[0]));return}
+    $('#status').textContent='Pick the right place:';
+    const box=$('#results');box.innerHTML='';
+    r.forEach(x=>{const b=document.createElement('button');b.type='button';const l=mk(x);b.textContent=l.label+(x.postcodes&&zip?'':'');b.onclick=()=>loadLoc(l);box.appendChild(b)});
+  }catch(err){$('#status').textContent='Search failed ('+err.message+'). Check your connection.'}
+});
+$('#geo').addEventListener('click',()=>{
+  if(!navigator.geolocation){$('#status').textContent='Location isn’t available in this browser. Search instead.';return}
+  $('#status').textContent='Finding you…';
+  navigator.geolocation.getCurrentPosition(p=>loadLoc({lat:+p.coords.latitude.toFixed(4),lon:+p.coords.longitude.toFixed(4),label:'Your location',gps:true}),
+    ()=>{$('#status').textContent='Location was blocked. Search for a city or ZIP instead.'},{timeout:10000});
+});
+$('#refresh').addEventListener('click',()=>S.loc&&loadLoc(S.loc));
+$('#days').addEventListener('click',e=>{const b=e.target.closest('.day');if(!b)return;S.sel=b.dataset.d;
+  document.querySelectorAll('.day').forEach(x=>x.setAttribute('aria-pressed',x===b));renderDay()});
+function setUnit(u){S.unit=u;save('unit',u);$('#uF').setAttribute('aria-pressed',u==='F');$('#uC').setAttribute('aria-pressed',u==='C');if(S.sources.length)render()}
+function setW(w){S.weighted=w;save('weighted',w);$('#wS').setAttribute('aria-pressed',w);$('#wE').setAttribute('aria-pressed',!w);if(S.sources.length)render()}
+$('#uF').onclick=()=>setUnit('F');$('#uC').onclick=()=>setUnit('C');
+$('#wS').onclick=()=>setW(true);$('#wE').onclick=()=>setW(false);
+setUnit(S.unit);setW(S.weighted);
+const saved=load('loc');if(saved&&saved.lat!=null)loadLoc(saved);
+}
+</script>
+</body>
+</html>
