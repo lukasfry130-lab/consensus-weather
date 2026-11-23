@@ -50,7 +50,9 @@ form.search input{width:100%;min-height:46px;border:0;border-radius:12px;padding
 .rchip button.rx:hover{opacity:1}
 .rchip.on{background:#fff}.rchip.on button{color:#b3161d}
 .hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px;align-items:center;margin-top:22px}
-.place{font-size:17px;opacity:.9}
+.place{font-size:17px;opacity:.95;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.ltime{font-size:14px;font-weight:600;background:rgba(255,255,255,.18);border-radius:999px;padding:3px 10px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ltime:empty{display:none}
 .now{font:800 clamp(72px,14vw,148px)/1 Archivo,sans-serif;letter-spacing:-.04em;margin:6px 0}
 .cond{font-size:20px;font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
@@ -447,7 +449,7 @@ function render(){
   const feels=blend(oms.map(s=>({v:s.cur.apparent_temperature,w:wt(s)}))),rh=blend(oms.map(s=>({v:s.cur.relative_humidity_2m,w:wt(s)})));
   const ok=S.sources.filter(s=>s.ok).length;
   $('#heroBox').innerHTML=`<div class="hero"><div>
-    <div class="place">${esc(S.loc.label)}</div>
+    <div class="place">${esc(S.loc.label)}<span class="ltime" id="ltime">${esc(localTime())}</span></div>
     <div class="now num">${fT(cur.t&&cur.t.v)}</div>
     <div class="cond">${WORD[td.cond]||''} · High ${fT(td.hi&&td.hi.v)} / Low ${fT(td.lo&&td.lo.v)}</div>
     <div class="chips">
@@ -532,6 +534,21 @@ function drawTrend(){
 }
 const trendObs=new ResizeObserver(drawTrend);trendObs.observe(tfig);
 
+// The searched city's own clock, from the time zone the forecast reports
+function localTime(){
+  if(!S.tz)return '';
+  try{
+    const now=new Date(),o={timeZone:S.tz};
+    let t=now.toLocaleTimeString([],{...o,hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+    const theirDay=now.toLocaleDateString('en-CA',o),myDay=now.toLocaleDateString('en-CA');
+    if(theirDay!==myDay)t=now.toLocaleDateString([],{...o,weekday:'short'})+' '+t;
+    return t;
+  }catch(e){ // unknown zone name: fall back to the UTC offset
+    const d=new Date(Date.now()+S.off*1000),h=d.getUTCHours();
+    return `${h%12||12}:${String(d.getUTCMinutes()).padStart(2,'0')} ${h<12?'AM':'PM'}`;
+  }
+}
+const clockTimer=setInterval(()=>{const el=document.getElementById('ltime');if(el)el.textContent=localTime()},20000);
 const nocov=s=>!s.ok&&/US locations only|no coverage/.test(s.err||'');
 function renderSources(){
   const all=[...S.sources,...S.ens],out=all.filter(nocov);
@@ -578,7 +595,7 @@ async function loadLoc(loc){
   S.sources=res.map((r,i)=>r.status==='fulfilled'?{...r.value,ok:true}:{...meta[i],ok:false,err:r.reason&&r.reason.message||'failed',daily:{},hourly:{}});
   const first=S.sources.find(s=>s.ok&&s.off!=null);
   if(!first){$('#status').textContent='Could not reach the weather services. Check your internet connection and open this file in a normal browser window.';return}
-  S.off=first.off;
+  S.off=first.off;S.tz=first.tz;
   const mn=S.sources.find(s=>s.id==='metno'&&s.ok);if(mn)finishMetno(mn);
   const nw=S.sources.find(s=>s.id==='nws'&&s.ok);
   if(loc.gps&&nw&&nw.place){loc.label=`${nw.place.city}, ${nw.place.state}`;save('loc',loc)}
