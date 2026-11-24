@@ -1043,8 +1043,9 @@ function rideRender(){
     st('Rain chance',fPct(P.maxCh),P.precip>=.2?`≈ ${fP(P.precip)} during the ride`:'highest along the route')+
     st('Wind',fW(P.avgWs),P.maxG?`gusts to ${fW(P.maxG)}`:'');
   const W_=wear(P);
-  $('#rWear').innerHTML=`<h2>What to wear</h2><div class="muted" style="font-size:14px">Dress for</div><div class="big">${fT(P.feelLo)}</div>
-    <div class="muted" style="font-size:14px">what the colder part of the ride feels like at ${fW(RD.spd)}. The thermometer says ${tr}.</div>
+  $('#rWear').innerHTML=`<h2>What to wear</h2><div class="muted" style="font-size:14px">Temperature on the ride</div><div class="big">${tr}</div>
+    <div style="font-size:15px;margin-top:6px">Feels like <b>${fT(P.feelLo)}</b> at ${fW(RD.spd)}</div>
+    <div class="muted" style="font-size:13px">Wind chill from riding, on the colder part of the route. The clothing below is picked for this.</div>
     <ul>${W_.kit.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>${W_.also.length?`<h3>Also</h3><ul>${W_.also.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
     <p class="muted" style="font-size:13px;margin:12px 0 0">A starting point. If you run warm or cold, shift one row up or down after a ride or two.</p>`;
   // headwind/tailwind share
