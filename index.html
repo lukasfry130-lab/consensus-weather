@@ -131,6 +131,11 @@ body:not([data-tab=ride]) .rd{display:none!important}
 .rmap{position:relative;min-height:360px;background:var(--soft);border-radius:16px;overflow:hidden}
 .rmap>svg{position:absolute;inset:0;width:100%;height:100%}
 .rmap text{font:700 11px Inter,sans-serif}
+.rmap{user-select:none;-webkit-user-select:none}.rmap>svg{cursor:grab;touch-action:pan-y}.rmap>svg.drag{cursor:grabbing}.rmap.zoomed>svg{touch-action:none}
+.zbtns{position:absolute;top:10px;right:10px;display:grid;gap:6px;z-index:2}
+.zbtns button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:700 20px/1 Inter,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.zbtns button[hidden]{display:none}
+.zhint{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--mut);pointer-events:none}
 .wleg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mut);margin-top:8px}
 .wleg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .wbar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--soft);margin:4px 0 2px}
@@ -210,7 +215,7 @@ tr.mine td{background:var(--soft);font-weight:600}
     <div class="summary rsum" id="rSum"></div>
     <div class="grid2">
       <div>
-        <div class="rmap" id="rmap"><svg id="rmapSvg" role="img" aria-label="Route map colored by headwind, tailwind and crosswind"></svg></div>
+        <div class="rmap" id="rmap"><svg id="rmapSvg" role="img" aria-label="Route map colored by headwind, tailwind and crosswind. Scroll or pinch to zoom, drag to move."></svg><div class="zbtns"><button type="button" id="zIn" aria-label="Zoom in">+</button><button type="button" id="zOut" aria-label="Zoom out">−</button><button type="button" id="zReset" aria-label="Show the whole route" title="Show the whole route" hidden style="font-size:16px">⤢</button></div><div class="zhint">Scroll or pinch to zoom · drag to move</div></div>
         <div class="wleg"><span><i style="background:#e5484d"></i>Headwind</span><span><i style="background:#22a35b"></i>Tailwind</span><span><i style="background:#f0a020"></i>Crosswind</span><span><i style="background:#98a2b3"></i>Light wind</span><span>Numbered dots are checkpoints</span></div>
       </div>
       <div class="wear" id="rWear"></div>
@@ -861,7 +866,7 @@ function setRoute(r,persist=true){
   if(pts.filter(p=>p.ele!=null).length<pts.length*.8)pts=pts.map(p=>({...p,ele:null}));
   else{let last=pts.find(p=>p.ele!=null).ele;pts=pts.map(p=>{if(p.ele!=null)last=p.ele;return {...p,ele:last}})}
   const tr=buildTrack(pts);if(tr.total<.3)throw new Error('short');
-  Object.assign(RD,{tr,name:r.name||'Your route',samples:samplePts(tr),raw:null,wx:null,win:'',plan:null,alts:[],revPlan:null});
+  Object.assign(RD,{mv:{z:1,x:0,y:0},tr,name:r.name||'Your route',samples:samplePts(tr),raw:null,wx:null,win:'',plan:null,alts:[],revPlan:null});
   if(persist)save('route',{name:RD.name,p:pts.map(p=>[+p.lat.toFixed(5),+p.lon.toFixed(5),p.ele==null?null:+p.ele.toFixed(1)])});
   showRouteName();
 }
@@ -1081,7 +1086,7 @@ function drawMap(){
   const svg=$('#rmapSvg'),P=RD.plan;if(!P)return;const W=svg.clientWidth,H=svg.clientHeight;if(!W||!H)return;
   const pts=RD.tr.pts;let a0=90,a1=-90,o0=180,o1=-180;for(const p of pts){a0=Math.min(a0,p.lat);a1=Math.max(a1,p.lat);o0=Math.min(o0,p.lon);o1=Math.max(o1,p.lon)}
   const k=Math.cos((a0+a1)/2*RAD),pad=28,sx=Math.max((o1-o0)*k,1e-5),sy=Math.max(a1-a0,1e-5),sc=Math.min((W-2*pad)/sx,(H-2*pad)/sy);
-  const ox=(W-sx*sc)/2,oy=(H-sy*sc)/2,X=p=>ox+(p.lon-o0)*k*sc,Y=p=>oy+(a1-p.lat)*sc;RD.proj=p=>[X(p),Y(p)];
+  const ox=(W-sx*sc)/2,oy=(H-sy*sc)/2,V=clampView(W,H),X=p=>(ox+(p.lon-o0)*k*sc)*V.z+V.x,Y=p=>(oy+(a1-p.lat)*sc)*V.z+V.y;RD.proj=p=>[X(p),Y(p)];
   const runs=[];let cur=null;
   for(const s of P.segs){if(!cur||cur.c!==s.cat){cur={c:s.cat,p:[s.a]};runs.push(cur)}const l=cur.p[cur.p.length-1];if(Math.hypot(X(s.b)-X(l),Y(s.b)-Y(l))>=1.5||s===P.segs[P.segs.length-1])cur.p.push(s.b)}
   const pl=r=>r.p.map(p=>X(p).toFixed(1)+','+Y(p).toFixed(1)).join(' ');
@@ -1125,6 +1130,34 @@ function drawProfile(){
   svg.onpointerleave=()=>{ro.hidden=true;const c=svg.querySelector('#pcur');if(c)c.setAttribute('visibility','hidden');const m=$('#mdot');if(m)m.setAttribute('visibility','hidden')};
 }
 new ResizeObserver(()=>{if(RD.plan)drawMap()}).observe($('#rmap'));
+// ---- map zoom & pan: view = scale z around the top-left, then shift by x,y (screen pixels)
+function clampView(W,H){
+  const v=RD.mv||(RD.mv={z:1,x:0,y:0});v.z=Math.max(1,Math.min(60,v.z));
+  v.x=Math.min(W*.5,Math.max(W*.5-W*v.z,v.x));v.y=Math.min(H*.5,Math.max(H*.5-H*v.z,v.y)); // keep some of the route on screen
+  if(v.z===1){v.x=0;v.y=0}
+  $('#rmap').classList.toggle('zoomed',v.z>1);$('#zReset').hidden=v.z===1;$('#zOut').disabled=v.z===1;
+  return v;
+}
+let mapRaf=0;const redrawMap=()=>{if(!mapRaf)mapRaf=requestAnimationFrame(()=>{mapRaf=0;drawMap()})};
+function zoomAt(f,cx,cy){const v=RD.mv;if(!v)return;const nz=Math.max(1,Math.min(60,v.z*f));v.x=cx-(cx-v.x)*nz/v.z;v.y=cy-(cy-v.y)*nz/v.z;v.z=nz;redrawMap()}
+{
+  const msvg=$('#rmapSvg'),ptrs=new Map();let last=null;
+  const rel=e=>{const r=msvg.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]};
+  const mid=()=>{const a=[...ptrs.values()];return [(a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2,Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])]};
+  msvg.addEventListener('wheel',e=>{if(!RD.plan)return;e.preventDefault();const [x,y]=rel(e);zoomAt(Math.exp(-e.deltaY*(e.deltaMode===1?.05:.0018)),x,y)},{passive:false});
+  msvg.addEventListener('dblclick',e=>{const [x,y]=rel(e);zoomAt(e.shiftKey?.5:2,x,y)});
+  msvg.addEventListener('pointerdown',e=>{if(!RD.plan)return;if(e.pointerType==='mouse')e.preventDefault();if(e.pointerType==='touch'&&RD.mv.z===1&&!ptrs.size){ptrs.set(e.pointerId,rel(e));return}
+    ptrs.set(e.pointerId,rel(e));try{msvg.setPointerCapture(e.pointerId)}catch(_){}msvg.classList.add('drag');last=ptrs.size===2?mid():null});
+  msvg.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId)||!RD.mv)return;const prev=ptrs.get(e.pointerId),cur=rel(e);ptrs.set(e.pointerId,cur);
+    if(ptrs.size===2){const m=mid();if(last&&last[2]>0){RD.mv.x+=m[0]-last[0];RD.mv.y+=m[1]-last[1];zoomAt(m[2]/last[2],m[0],m[1])}last=m;return}
+    if(e.pointerType==='touch'&&RD.mv.z===1)return; // one finger on an un-zoomed map scrolls the page
+    RD.mv.x+=cur[0]-prev[0];RD.mv.y+=cur[1]-prev[1];redrawMap()});
+  const up=e=>{ptrs.delete(e.pointerId);last=ptrs.size===2?mid():null;if(!ptrs.size)msvg.classList.remove('drag')};
+  msvg.addEventListener('pointerup',up);msvg.addEventListener('pointercancel',up);
+  const centre=()=>[msvg.clientWidth/2,msvg.clientHeight/2];
+  $('#zIn').onclick=()=>zoomAt(1.6,...centre());$('#zOut').onclick=()=>zoomAt(1/1.6,...centre());
+  $('#zReset').onclick=()=>{RD.mv={z:1,x:0,y:0};redrawMap()};
+}
 new ResizeObserver(()=>{if(RD.plan)drawProfile()}).observe($('#rprofwrap'));
 
 function stravaHelp(text){
