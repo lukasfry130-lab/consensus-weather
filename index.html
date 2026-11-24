@@ -107,6 +107,48 @@ td small{display:block;color:var(--mut);font-weight:400;font-size:12px}
 .empty{padding:36px 0;font-size:18px;opacity:.95}
 .scroll{overflow-x:auto}
 footer{font-size:13px;color:var(--mut)}
+.tabs{display:flex;gap:6px;margin-top:18px}
+.tabs button{border:0;background:rgba(255,255,255,.14);color:#fff;min-height:42px;padding:0 18px;border-radius:999px;font-weight:600}
+.tabs button[aria-selected=true]{background:#fff;color:#b3161d}
+body[data-tab=ride] .fc{display:none!important}
+body:not([data-tab=ride]) .rd{display:none!important}
+.rgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-top:20px;align-items:start}
+.drop{background:rgba(255,255,255,.12);border:2px dashed rgba(255,255,255,.55);border-radius:14px;padding:10px}
+.drop.over{background:rgba(255,255,255,.26);border-color:#fff}
+.drop textarea{width:100%;min-height:104px;border:0;border-radius:10px;padding:10px 12px;font:14px/1.45 Inter,sans-serif;color:#0f172a;background:#fff;resize:vertical}
+.dropbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px;font-size:14px}
+.dropbar .btn{display:inline-flex;align-items:center;cursor:pointer}
+#rname{font-weight:600}
+.rform{display:grid;gap:10px}
+.rform label{display:grid;gap:4px;font-size:14px;font-weight:600}
+.rform input[type=datetime-local],.rform input[type=number]{min-height:46px;border:0;border-radius:12px;padding:0 12px;font-size:16px;color:#0f172a;background:#fff;width:100%}
+.rform .chk{display:flex;align-items:center;gap:8px;font-weight:500;min-height:40px}
+.rform .chk input{width:20px;height:20px;accent-color:#fff}
+.howto{font-size:14px;margin-top:10px}.howto summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}
+.howto ol{margin:4px 0 0;padding-left:20px;max-width:70ch}
+.sky a{color:#fff;font-weight:600}
+.rsum{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.rmap{position:relative;min-height:360px;background:var(--soft);border-radius:16px;overflow:hidden}
+.rmap>svg{position:absolute;inset:0;width:100%;height:100%}
+.rmap text{font:700 11px Inter,sans-serif}
+.wleg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mut);margin-top:8px}
+.wleg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.wbar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--soft);margin:4px 0 2px}
+.wbar i{display:block;height:100%}
+.callout{background:var(--soft);border-left:4px solid var(--sky1);border-radius:8px;padding:10px 14px;margin:12px 0;max-width:70ch}
+.stretches{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
+.stretches li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:15px}
+.stretches .when{color:var(--mut);font-size:13px}
+.tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700;color:#fff;white-space:nowrap;text-align:center}
+.t-head{background:#d43a40}.t-tail{background:#1d8a4e}.t-cross{background:#b06d00}.t-calm{background:#6b7686}
+.wear{background:var(--soft);border-radius:16px;padding:16px 18px}
+.wear h2{margin-bottom:6px}.wear h3{font-size:15px;margin:14px 0 0}
+.wear ul{margin:6px 0 0;padding-left:20px}.wear li{margin:5px 0}
+.wear .big{font:800 44px/1 Archivo,sans-serif;margin:4px 0}
+.sk svg{width:34px;height:32px;vertical-align:middle}
+.alt button,.linkbtn{min-height:38px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:0 14px;font-weight:600}
+tr.mine td{background:var(--soft);font-weight:600}
+@media(max-width:760px){.rgrid{grid-template-columns:minmax(0,1fr)}.stretches li{grid-template-columns:minmax(0,1fr)}.stretches .tag{justify-self:start}}
 @media(max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.hero{grid-template-columns:minmax(0,1fr)}.bigicon{max-width:200px;grid-row:1}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}table{font-size:13px}th,td{padding:8px 5px}}
 @media(prefers-reduced-motion:no-preference){.bigicon svg{animation:bob 6s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-6px)}}}
@@ -122,7 +164,29 @@ footer{font-size:13px;color:var(--mut)}
         <div class="seg" role="group" aria-label="Averaging"><button id="wS" aria-pressed="true" title="Weight sources by track record">Skill-weighted</button><button id="wE" aria-pressed="false">Equal</button></div>
       </div>
     </div>
-    <form class="search" id="search">
+    <div class="tabs" role="tablist" aria-label="View"><button role="tab" id="tF" aria-selected="true" aria-controls="main">Forecast</button><button role="tab" id="tR" aria-selected="false" aria-controls="rideMain">Ride planner</button></div>
+    <div class="rd" id="rideHead">
+      <div class="rgrid">
+        <div>
+          <div class="drop" id="drop">
+            <textarea id="gpx" aria-label="Paste a GPX route" placeholder="Drop a GPX file here, or paste its contents. Works with routes and rides exported from Strava, Garmin, Komoot or RideWithGPS."></textarea>
+            <div class="dropbar"><label class="btn solid" for="gpxFile">Choose GPX file</label><input type="file" id="gpxFile" accept=".gpx,.tcx,.xml,application/gpx+xml" hidden><span id="rname"></span></div>
+          </div>
+          <details class="howto"><summary>How to get a GPX file from Strava</summary>
+            <ol><li>On strava.com, open your route (Dashboard → My Routes) or a past ride.</li><li>Open the route's ⋯ menu and choose <b>Export GPX</b>. For a ride, it's ⋯ → Export GPX.</li><li>Drop the downloaded file here. You can also paste a Strava link here and you'll get a direct download link.</li></ol>
+            <p style="margin:6px 0 0">Strava won't let other websites read routes straight from a link, so the file is needed.</p>
+          </details>
+        </div>
+        <div class="rform">
+          <label><span>Start time (at the route's start)</span><input type="datetime-local" id="rStart"></label>
+          <label><span>Average speed (<span id="spdU">mph</span>)</span><input type="number" id="rSpd" min="3" max="60" step="0.5" inputmode="decimal"></label>
+          <label class="chk"><input type="checkbox" id="rRev"> Ride the route in reverse</label>
+          <button class="btn solid" type="button" id="rGo">Get ride forecast</button>
+        </div>
+      </div>
+      <div class="status" id="rStatus" role="status"></div>
+    </div>
+    <form class="search fc" id="search">
       <div class="qwrap">
         <input id="q" type="search" placeholder="City or ZIP code" aria-label="City or ZIP code" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugg">
         <ul id="sugg" role="listbox" hidden></ul>
@@ -131,16 +195,60 @@ footer{font-size:13px;color:var(--mut)}
       <button class="btn" type="button" id="geo">Use my location</button>
       <button class="btn" type="button" id="refresh" hidden>Refresh</button>
     </form>
-    <div class="results" id="results"></div>
-    <div class="recent" id="recent"></div>
-    <div id="heroBox">
+    <div class="results fc" id="results"></div>
+    <div class="recent fc" id="recent"></div>
+    <div id="heroBox" class="fc">
       <div class="empty">Search for a place. This app pulls forecasts from up to nine weather models and forecasting agencies, then blends them into one consensus forecast.</div>
     </div>
-    <div class="status" id="status" role="status"></div>
+    <div class="status fc" id="status" role="status"></div>
   </div>
 </header>
 
-<main id="main" hidden>
+<main id="rideMain" class="rd" hidden>
+  <section class="band"><div class="wrap">
+    <h2 id="rTitle"></h2>
+    <div class="summary rsum" id="rSum"></div>
+    <div class="grid2">
+      <div>
+        <div class="rmap" id="rmap"><svg id="rmapSvg" role="img" aria-label="Route map colored by headwind, tailwind and crosswind"></svg></div>
+        <div class="wleg"><span><i style="background:#e5484d"></i>Headwind</span><span><i style="background:#22a35b"></i>Tailwind</span><span><i style="background:#f0a020"></i>Crosswind</span><span><i style="background:#98a2b3"></i>Light wind</span><span>Numbered dots are checkpoints</span></div>
+      </div>
+      <div class="wear" id="rWear"></div>
+    </div>
+  </div></section>
+  <section class="band" style="padding-top:0"><div class="wrap grid2">
+    <div>
+      <h2>Headwinds and tailwinds</h2>
+      <div class="wbar" id="rBar"></div><div class="wleg" id="rBarLeg" style="margin-top:4px"></div>
+      <div id="rHead"></div>
+      <ul class="stretches" id="rStr"></ul>
+    </div>
+    <div>
+      <h2>Wind and elevation along the ride</h2>
+      <div class="fig" id="rprofwrap" style="min-height:250px"><svg id="rprof" role="img" aria-label="Elevation profile and headwind or tailwind along the ride"></svg><div class="readout" id="rro" hidden></div></div>
+      <p class="muted" style="font-size:13px">Green bars above the line are tailwind, red bars below are headwind. Hover or drag across it to follow the ride on the map.</p>
+    </div>
+  </div></section>
+  <section class="band" style="padding-top:0"><div class="wrap">
+    <h2>Checkpoints</h2>
+    <div class="scroll"><table id="rTab"></table></div>
+  </div></section>
+  <section class="band" style="padding-top:0"><div class="wrap">
+    <h2>Other start times</h2>
+    <p class="muted" style="margin-top:-4px;max-width:70ch">Same route and speed, leaving a little earlier or later. "Best" has the least headwind and rain.</p>
+    <div class="scroll"><table id="rAlt" class="alt"></table></div>
+    <p id="rRevNote" style="max-width:70ch"></p>
+  </div></section>
+  <section class="band" style="background:var(--soft)"><div class="wrap method">
+    <h2>How the ride forecast works</h2>
+    <p>The route is split into checkpoints about every 10 km (6 miles). For each one, the app asks up to nine forecast models what the weather will be at the time you'll get there, and blends them the same way as the main forecast.</p>
+    <p><b>Arrival times</b> come from your average speed, slowed on climbs and a little faster on descents, with no stops. Long cafe stops will push everything later.</p>
+    <p><b>Headwind or tailwind</b> compares the blended wind direction with the direction you're riding on every stretch of road. Wind within 45° of straight ahead is a headwind, within 45° of straight behind is a tailwind, and anything else is a crosswind. Forecast wind is measured 10 m up. At handlebar height it's usually about a third lighter, and trees and buildings block more.</p>
+    <p><b>Feels at speed</b> adds the wind you make by riding, plus any headwind, to the wind chill. That's why it reads colder than the thermometer, and it's what the clothing advice uses.</p>
+  </div></section>
+</main>
+
+<main id="main" class="fc" hidden>
   <section class="band"><div class="wrap">
     <h2>Next 7 days</h2>
     <div class="days" id="days"></div>
@@ -696,11 +804,374 @@ $('#geo').addEventListener('click',()=>{
 $('#refresh').addEventListener('click',()=>S.loc&&loadLoc(S.loc));
 $('#days').addEventListener('click',e=>{const b=e.target.closest('.day');if(!b)return;S.sel=b.dataset.d;
   document.querySelectorAll('.day').forEach(x=>x.setAttribute('aria-pressed',x===b));renderDay()});
-function setUnit(u){S.unit=u;save('unit',u);$('#uF').setAttribute('aria-pressed',u==='F');$('#uC').setAttribute('aria-pressed',u==='C');if(S.sources.length)render()}
-function setW(w){S.weighted=w;save('weighted',w);$('#wS').setAttribute('aria-pressed',w);$('#wE').setAttribute('aria-pressed',!w);if(S.sources.length)render()}
+// ===================== Ride planner: weather along a GPX route =====================
+const RC={head:'#e5484d',tail:'#22a35b',cross:'#f0a020',calm:'#98a2b3'};
+const RW={head:'Headwind',tail:'Tailwind',cross:'Crosswind',calm:'Light wind'};
+const RIDE_MODELS=[['ecmwf_ifs025',1],['ukmo_seamless',.9],['icon_seamless',.85],['gfs_seamless',.8],['ncep_nbm_conus',.95],['ncep_hrrr_conus',.85],['gem_seamless',.75],['meteofrance_seamless',.75],['jma_seamless',.7]];
+const RV=['temperature_2m','apparent_temperature','precipitation','wind_speed_10m','wind_direction_10m','wind_gusts_10m','weather_code'];
+const RD={tr:null,name:'',samples:[],raw:null,wx:null,win:'',plan:null,alts:[],revPlan:null,spd:load('rspd')||25.75,proj:null};
+const RAD=Math.PI/180;
+const fD=km=>{const v=S.unit==='F'?km/1.609:km;return (v<10?v.toFixed(1):Math.round(v))+(S.unit==='F'?' mi':' km')};
+const dN=km=>S.unit==='F'?km/1.609:km;
+const fE=m=>(S.unit==='F'?Math.round(m*3.281):Math.round(m)).toLocaleString()+(S.unit==='F'?' ft':' m');
+const hav=(a,b)=>{const dla=(b.lat-a.lat)*RAD,dlo=(b.lon-a.lon)*RAD,h=Math.sin(dla/2)**2+Math.cos(a.lat*RAD)*Math.cos(b.lat*RAD)*Math.sin(dlo/2)**2;return 12742*Math.asin(Math.min(1,Math.sqrt(h)))};
+const brg=(a,b)=>{const y=Math.sin((b.lon-a.lon)*RAD)*Math.cos(b.lat*RAD),x=Math.cos(a.lat*RAD)*Math.sin(b.lat*RAD)-Math.sin(a.lat*RAD)*Math.cos(b.lat*RAD)*Math.cos((b.lon-a.lon)*RAD);return (Math.atan2(y,x)/RAD+360)%360};
+
+function parseRoute(text){
+  const doc=new DOMParser().parseFromString(String(text||'').trim(),'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw new Error('bad');
+  const tag=(el,n)=>[...el.getElementsByTagNameNS('*',n)];
+  const num=x=>x==null||String(x).trim()===''||!isFinite(+x)?null:+x;
+  let els=tag(doc,'trkpt');if(!els.length)els=tag(doc,'rtept');
+  let pts=els.map(e=>{const el=tag(e,'ele')[0];return {lat:num(e.getAttribute('lat')),lon:num(e.getAttribute('lon')),ele:el?num(el.textContent):null}});
+  if(!pts.length)pts=tag(doc,'Trackpoint').map(e=>{const g=n=>{const x=tag(e,n)[0];return x?num(x.textContent):null};return {lat:g('LatitudeDegrees'),lon:g('LongitudeDegrees'),ele:g('AltitudeMeters')}});
+  pts=pts.filter(p=>p.lat!=null&&p.lon!=null&&Math.abs(p.lat)<=90&&Math.abs(p.lon)<=180&&(p.lat||p.lon));
+  if(pts.length<2)throw new Error('bad');
+  const nm=tag(doc,'name')[0];
+  return {name:nm?nm.textContent.trim():'',pts};
+}
+// drop points closer than ~12 m (GPS jitter) and cap the size
+function thin(pts){
+  let out=[pts[0]];
+  for(let i=1;i<pts.length;i++)if(hav(out[out.length-1],pts[i])>=.012)out.push(pts[i]);
+  if(out[out.length-1]!==pts[pts.length-1])out.push(pts[pts.length-1]);
+  if(out.length>5000){const k=Math.ceil(out.length/5000);out=out.filter((p,i)=>i%k===0||i===out.length-1)}
+  return out;
+}
+function buildTrack(pts){
+  const n=pts.length,d=[0];for(let i=1;i<n;i++)d[i]=d[i-1]+hav(pts[i-1],pts[i]);
+  let es=null,gain=0;
+  if(pts.every(p=>p.ele!=null)){ // smooth elevation over ±100 m so GPS noise doesn't fake climbs
+    es=new Array(n);let a=0,b=0,sum=0;
+    for(let i=0;i<n;i++){while(b<n&&d[b]<=d[i]+.1){sum+=pts[b].ele;b++}while(d[a]<d[i]-.1){sum-=pts[a].ele;a++}es[i]=sum/(b-a)}
+    for(let i=1;i<n;i++)gain+=Math.max(0,es[i]-es[i-1]);
+  }
+  // riding direction at each point, measured over ~80 m either side so tiny wiggles don't flip head/tail
+  const sb=new Array(n);let a=0,b=0;
+  for(let i=0;i<n;i++){while(a<i&&d[i]-d[a+1]>=.08)a++;while(b<n-1&&d[b]-d[i]<.08)b++;sb[i]=brg(pts[a===i&&i>0?i-1:a],pts[b===i&&i<n-1?i+1:b])}
+  return {pts,d,es,sb,gain,total:d[n-1]};
+}
+function samplePts(tr){
+  const ns=Math.max(2,Math.min(15,Math.round(tr.total/10)+1)),out=[];let i=0;
+  for(let k=0;k<ns;k++){const x=tr.total*k/(ns-1);while(i<tr.pts.length-1&&tr.d[i]<x)i++;out.push(tr.pts[i])}
+  return out;
+}
+function setRoute(r,persist=true){
+  let pts=thin(r.pts);
+  if(pts.filter(p=>p.ele!=null).length<pts.length*.8)pts=pts.map(p=>({...p,ele:null}));
+  else{let last=pts.find(p=>p.ele!=null).ele;pts=pts.map(p=>{if(p.ele!=null)last=p.ele;return {...p,ele:last}})}
+  const tr=buildTrack(pts);if(tr.total<.3)throw new Error('short');
+  Object.assign(RD,{tr,name:r.name||'Your route',samples:samplePts(tr),raw:null,wx:null,win:'',plan:null,alts:[],revPlan:null});
+  if(persist)save('route',{name:RD.name,p:pts.map(p=>[+p.lat.toFixed(5),+p.lon.toFixed(5),p.ele==null?null:+p.ele.toFixed(1)])});
+  showRouteName();
+}
+function showRouteName(){const tr=RD.tr;$('#rname').textContent=tr?`${RD.name} · ${fD(tr.total)}${tr.es?' · '+fE(tr.gain)+' of climbing':''}`:''}
+
+async function rideWx(samples,date,today){
+  const lat=samples.map(p=>p.lat.toFixed(4)).join(','),lon=samples.map(p=>p.lon.toFixed(4)).join(',');
+  let end=addDay(date,2);if(end>addDay(today,15))end=addDay(today,15);
+  const sets=[RIDE_MODELS,RIDE_MODELS.filter(m=>m[0]!=='ncep_hrrr_conus'),[['best_match',1]]];let last;
+  for(const set of sets){
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${RV.join(',')}&models=${set.map(m=>m[0]).join(',')}&timezone=auto&timeformat=unixtime&start_date=${addDay(date,-1)}&end_date=${end}`;
+    try{const d=await limit(()=>j(u,30000));return {arr:Array.isArray(d)?d:[d],set}}
+    catch(e){last=e;if(!/HTTP 400/.test(e.message))throw e} // a model name the API doesn't know: try a shorter list
+  }
+  throw last;
+}
+// blend the models at every checkpoint, every hour
+function parseWx(arr,set){
+  const time=((arr[0].hourly||{}).time||[]).map(s=>s*1000),key=(v,id)=>set.length>1?v+'_'+id:v;
+  let models=0;
+  const sites=arr.map((d,si)=>{const H=d.hourly||{};
+    const ms=set.map(([id,w])=>{const o={w:S.weighted?w:1};for(const v of RV)o[v]=H[key(v,id)]||[];return o}).filter(m=>m.temperature_2m.some(x=>x!=null));
+    if(si===0)models=ms.length;
+    return time.map((_,i)=>{const L=ms.filter(m=>m.temperature_2m[i]!=null);if(!L.length)return {t:null};
+      const pick=v=>L.map(m=>({v:m[v][i],w:m.w}));
+      const t=blend(pick('temperature_2m')),a=blend(pick('apparent_temperature')),ws=blend(pick('wind_speed_10m')),g=blend(pick('wind_gusts_10m')),p=blend(pick('precipitation'));
+      const dir=dirBlend(L.map(m=>({d:m.wind_direction_10m[i],w:m.w})));
+      let vs=0,vw=0;for(const m of L){const x=m.precipitation[i];if(x!=null){vs+=(x>=.1?1:0)*m.w;vw+=m.w}}
+      const cg={};for(const m of L){const c=m.weather_code[i];if(c!=null){const k=grp(c);cg[k]=(cg[k]||0)+m.w}}
+      let cond=Object.keys(cg).sort((x,y)=>cg[y]-cg[x])[0]||'cloud';const ch=vw?vs/vw:null;
+      if(ch!=null){if(ch>=.5&&!wet(cond))cond=t.v<1?'snow':'rain';if(ch<.25&&wet(cond))cond='partly'}
+      return {t:t.v,a:a&&a.v,ws:ws?ws.v:null,g:g&&g.v,wd:dir&&dir.v,p:p?p.v:0,ch,cond,n:L.length}})});
+  return {time,off:arr[0].utc_offset_seconds||0,sites,models};
+}
+function wxAt(si,ms){
+  const W=RD.wx,T0=W.time;if(T0.length<2)return null;const f=(ms-T0[0])/3600e3;if(f<0||f>T0.length-1)return null;
+  const i=Math.min(T0.length-2,Math.floor(f)),k=f-i,a=W.sites[si][i],b=W.sites[si][i+1],c=k<.5?a:b;
+  if(a.t==null||b.t==null)return c.t==null?null:c;
+  const L=(x,y)=>x==null?y:y==null?x:x+(y-x)*k;let wd=c.wd;
+  if(a.wd!=null&&b.wd!=null&&a.ws!=null&&b.ws!=null){ // interpolate direction as a vector
+    const x=L(a.ws*Math.sin(a.wd*RAD),b.ws*Math.sin(b.wd*RAD)),y=L(a.ws*Math.cos(a.wd*RAD),b.ws*Math.cos(b.wd*RAD));if(x||y)wd=(Math.atan2(x,y)/RAD+360)%360}
+  return {t:L(a.t,b.t),a:L(a.a,b.a),ws:L(a.ws,b.ws),wd,g:L(a.g,b.g),p:c.p,ch:c.ch,cond:c.cond};
+}
+// how cold it feels while moving: wind chill from your own speed plus the headwind (°C in, °C out)
+function rideFeel(tC,aC,air){
+  const tF=tC*9/5+32,mph=air/1.609*.75; // airflow over the body is a bit less than full road speed
+  const wc=mph>3&&tF<=50?35.74+.6215*tF-35.75*mph**.16+.4275*tF*mph**.16:tF,wcC=(wc-32)*5/9,warm=aC!=null?Math.min(aC,tC+2):tC;
+  if(tC<=10)return Math.min(wcC,tC);if(tC>=16)return warm;const k=(tC-10)/6;return tC*(1-k)+warm*k;
+}
+function simulate(tr,start,spd,rev){
+  const {pts,d,es,sb,total}=tr,n=pts.length,ns=RD.samples.length,segs=[];let t=start,dist=0;
+  for(let s=1;s<n;s++){
+    const i=rev?n-s:s-1,k=rev?n-s-1:s,len=Math.abs(d[k]-d[i]);if(len<=0)continue;
+    const g=es?Math.max(-.15,Math.min(.15,(es[k]-es[i])/(len*1000))):0;
+    const v=g>0?spd/(1+g*10):spd*Math.min(1.35,1-g*4); // slower uphill, a bit faster downhill
+    const dt=len/v*3600e3,hd=rev?(sb[k]+180)%360:sb[i];
+    const si=Math.max(0,Math.min(ns-1,Math.round((d[i]+d[k])/2/total*(ns-1))));
+    const w=wxAt(si,t+dt/2);
+    const sg={d0:dist,d1:dist+len,t0:t,t1:t+dt,v,hd,w,a:pts[i],b:pts[k],ele0:es?es[i]:null,ele:es?es[k]:null,head:0,cross:0,cat:'calm'};
+    if(w&&w.ws!=null&&w.wd!=null){const D=((w.wd-hd+540)%360)-180;sg.head=w.ws*Math.cos(D*RAD);sg.cross=w.ws*Math.sin(D*RAD);
+      sg.cat=w.ws<6?'calm':Math.abs(D)<=45?'head':Math.abs(D)>=135?'tail':'cross'}
+    if(w)sg.feel=rideFeel(w.t,w.a,Math.max(0,v+.7*sg.head));
+    segs.push(sg);t+=dt;dist+=len;
+  }
+  return summarize(segs,start,rev);
+}
+function summarize(segs,start,rev){
+  const tot=segs.length?segs[segs.length-1].d1:0,ok=segs.filter(s=>s.w);
+  const by={head:0,tail:0,cross:0,calm:0};let L=0,hs=0,cost=0,ws=0,pr=0,mc=0,mg=0,tmin=1e9,tmax=-1e9,gain=0;const fe=[];
+  for(const s of segs)if(s.ele!=null)gain+=Math.max(0,s.ele-s.ele0);
+  for(const s of ok){const l=s.d1-s.d0;L+=l;by[s.cat]+=l;hs+=s.head*l;cost+=(s.head>0?s.head:.6*s.head)*l;ws+=(s.w.ws||0)*l;pr+=(s.w.p||0)*(s.t1-s.t0)/3600e3;
+    mc=Math.max(mc,s.w.ch||0);if(s.w.g!=null)mg=Math.max(mg,s.w.g);tmin=Math.min(tmin,s.w.t);tmax=Math.max(tmax,s.w.t);fe.push({v:s.feel,w:l})}
+  const P={segs,start,rev,tot,gain,end:segs.length?segs[segs.length-1].t1:start,cover:tot?L/tot:0,by,L};
+  if(!L)return P;
+  return Object.assign(P,{avgHead:hs/L,avgWs:ws/L,precip:pr,maxCh:mc,maxG:mg||null,tMin:tmin,tMax:tmax,feelLo:wpct(fe,.15),feelHi:wpct(fe,.9),feelStart:ok[0].feel,feelEnd:ok[ok.length-1].feel,score:cost/L+20*mc});
+}
+// group the ride into stretches of headwind / tailwind / crosswind, folding tiny bits into their neighbours
+function stretches(P){
+  const st=[];
+  for(const s of P.segs){const c=s.cat,l=st[st.length-1];if(l&&l.cat===c){l.d1=s.d1;l.t1=s.t1;l.segs.push(s)}else st.push({cat:c,d0:s.d0,d1:s.d1,t0:s.t0,t1:s.t1,segs:[s]})}
+  const min=Math.max(.8,P.tot*.04),len=x=>x.d1-x.d0;
+  const fuse=()=>{for(let i=st.length-1;i>0;i--)if(st[i].cat===st[i-1].cat){st[i-1].d1=st[i].d1;st[i-1].t1=st[i].t1;st[i-1].segs=st[i-1].segs.concat(st[i].segs);st.splice(i,1)}};
+  for(let guard=0;guard<20000&&st.length>1;guard++){
+    let k=-1,ml=Infinity;st.forEach((x,i)=>{if(len(x)<min&&len(x)<ml){ml=len(x);k=i}});if(k<0)break;
+    const a=st[k-1],b=st[k+1],tg=!a?b:!b?a:len(a)>=len(b)?a:b;
+    if(tg===a){a.d1=st[k].d1;a.t1=st[k].t1;a.segs=a.segs.concat(st[k].segs)}else{b.d0=st[k].d0;b.t0=st[k].t0;b.segs=st[k].segs.concat(b.segs)}
+    st.splice(k,1);fuse();
+  }
+  return st.map(x=>{let L=0,ws=0,hd=0,cr=0,g=0;const dirs=[];
+    for(const s of x.segs){if(!s.w)continue;const l=s.d1-s.d0;L+=l;ws+=(s.w.ws||0)*l;hd+=s.head*l;cr+=s.cross*l;if(s.w.g!=null)g=Math.max(g,s.w.g);dirs.push({d:s.w.wd,w:l})}
+    const dir=dirBlend(dirs);return {cat:x.cat,d0:x.d0,d1:x.d1,t0:x.t0,t1:x.t1,ws:L?ws/L:null,head:L?hd/L:0,cross:L?cr/L:0,gust:g||null,from:dir&&dir.v}});
+}
+// sun height above the horizon in degrees (NOAA-style approximation, good to about a minute)
+function sunAlt(lat,lon,ms){
+  const d=ms/864e5-10957.5,g=(357.529+.98560028*d)*RAD,q=280.459+.98564736*d;
+  const L=(q+1.915*Math.sin(g)+.02*Math.sin(2*g))*RAD,e=(23.439-3.6e-7*d)*RAD;
+  const dec=Math.asin(Math.sin(e)*Math.sin(L)),ra=Math.atan2(Math.cos(e)*Math.sin(L),Math.cos(L));
+  const ha=((18.697374558+24.06570982441908*d)%24*15+lon)*RAD-ra;
+  return Math.asin(Math.sin(lat*RAD)*Math.sin(dec)+Math.cos(lat*RAD)*Math.cos(dec)*Math.cos(ha))/RAD;
+}
+const fClock=(ms,ref)=>{ms=Math.round(ms/300e3)*300e3;const o=RD.wx?RD.wx.off*1000:0,d=new Date(ms+o),h=d.getUTCHours();
+  let s=`${h%12||12}:${String(d.getUTCMinutes()).padStart(2,'0')} ${h<12?'AM':'PM'}`;
+  if(ref!=null&&new Date(ref+o).getUTCDate()!==d.getUTCDate())s=d.toLocaleDateString([],{weekday:'short',timeZone:'UTC'})+' '+s;return s};
+const fDur=ms=>{const m=Math.round(ms/6e4);return `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}m`};
+const pc=(a,b)=>b?Math.round(a/b*100)+'%':'–';
+const onYou=h=>h==null?'–':Math.abs(h)<1.6?'About even':`${fW(Math.abs(h))} ${h>0?'headwind':'tailwind'}`;
+const windOn=(cat,ws,cross)=>`<span class="tag t-${cat}">${cat==='cross'?'Cross from '+(cross>0?'right':'left'):RW[cat]}</span> ${fW(ws)}`;
+
+function wear(P){
+  const F=c=>c*9/5+32,lo=F(P.feelLo),also=[];let kit;
+  if(lo>=75)kit=['Short-sleeve jersey','Bib shorts','Thin socks'];
+  else if(lo>=65)kit=['Short-sleeve jersey','Bib shorts'];
+  else if(lo>=58)kit=['Short-sleeve jersey','Bib shorts','Arm warmers you can roll down','Light base layer (optional)'];
+  else if(lo>=50)kit=['Light base layer','Short-sleeve jersey with arm warmers, or a light long-sleeve jersey','Bib shorts with knee warmers','Wind vest','Light full-finger gloves'];
+  else if(lo>=42)kit=['Long-sleeve base layer','Thermal long-sleeve jersey','Leg warmers or thermal tights','Wind vest','Full-finger gloves','Thin cap or headband under the helmet'];
+  else if(lo>=34)kit=['Thermal base layer','Winter jacket','Thermal bib tights','Winter gloves','Wool socks and toe covers','Thermal cap that covers your ears'];
+  else if(lo>=25)kit=['Thick thermal base layer','Insulated winter jacket','Thermal bib tights','Lobster or heavy winter gloves','Wool socks and insulated shoe covers','Balaclava or neck gaiter'];
+  else kit=['Full winter kit: heavy base layer, insulated jacket, thermal tights, lobster gloves, insulated shoe covers, balaclava','This is cold enough that an indoor ride is worth considering'];
+  const ds=P.feelEnd-P.feelStart;
+  if(Math.abs(ds)>=6.5)also.push(ds>0?`It warms from about ${fT(P.feelStart)} to ${fT(P.feelEnd)} (feels at speed), so wear layers you can unzip or stash in a pocket.`:`It cools from about ${fT(P.feelStart)} to ${fT(P.feelEnd)} by the end, so carry a layer to put on later.`);
+  else if(F(P.feelHi)-lo>=12)also.push(`It swings between about ${fT(P.feelLo)} and ${fT(P.feelHi)} along the way, so layers you can adjust help.`);
+  if(P.maxCh>=.5)also.push(`Rain likely (${fPct(P.maxCh)} at its peak): waterproof jacket, fenders if you have them, and shoe covers. Brake early on wet roads.`);
+  else if(P.maxCh>=.25)also.push(`Some chance of rain (${fPct(P.maxCh)}): pack a light rain shell.`);
+  if(P.tMin<=1.5&&(P.precip>.1||P.maxCh>=.3))also.push('Near freezing with moisture around: watch for ice on bridges and in shaded corners.');
+  if(P.maxG>=40)also.push(`Gusty, up to ${fW(P.maxG)}: keep a loose grip on exposed stretches. Deep-section wheels will get pushed around.`);
+  else if(P.avgWs>=25)also.push(`Windy (${fW(P.avgWs)} on average): a wind vest helps on the open parts.`);
+  if(F(P.tMax)>=85)also.push(`Hot, up to ${fT(P.tMax)}: two bottles with electrolytes and a planned refill stop.${F(P.tMax)>=92?' An earlier start would help.':''}`);
+  const s0=P.segs[0].a,alt=t=>sunAlt(s0.lat,s0.lon,t),sd=alt(P.start)<-.833,ed=alt(P.end)<-.833;let cr=null;
+  for(let t=P.start;t<=P.end;t+=300e3)if((alt(t)<-.833)!==sd){cr=t;break}
+  if(sd&&ed&&!cr)also.push('In the dark the whole way: bright front and rear lights, and something reflective.');
+  else if(sd)also.push(`Starts before sunrise (around ${fClock(cr)}): front and rear lights.`);
+  else if(ed)also.push(`Finishes after sunset (around ${fClock(cr)}): front and rear lights, and something reflective.`);
+  else if(alt(P.end)<4)also.push('Finishes close to sunset: bring lights in case you run late.');
+  let sunny=0;for(const s of P.segs)if(s.w&&(s.w.cond==='sun'||s.w.cond==='partly')&&sunAlt(s.a.lat,s.a.lon,s.t0)>10)sunny+=s.d1-s.d0;
+  if(sunny>=P.tot*.4)also.push(F(P.tMax)>=50?'Mostly sunny: sunglasses and sunscreen.':'Low winter sun: tinted glasses help with glare.');
+  return {kit,also};
+}
+
+let planSeq=0;
+async function planRide(){
+  const st=$('#rStatus');
+  if(!RD.tr){st.textContent='Add a route first: drop in a GPX file or paste its contents above.';return}
+  const sv=$('#rStart').value;if(!sv){st.textContent='Pick a start time.';return}
+  const date=sv.slice(0,10),today=new Date().toLocaleDateString('en-CA');
+  const win=date+'|'+RD.samples.map(p=>p.lat.toFixed(3)+','+p.lon.toFixed(3)).join(';');
+  if(RD.win!==win||!RD.raw){
+    if(date>addDay(today,15)){st.textContent='Forecasts only reach about 16 days ahead. Pick a closer date.';return}
+    if(date<addDay(today,-60)){st.textContent='That date is too far in the past for a forecast.';return}
+    const my=++planSeq;$('#rGo').disabled=true;
+    st.textContent=`Getting the forecast at ${RD.samples.length} points along the route from up to ${RIDE_MODELS.length} weather models…`;
+    try{const r=await rideWx(RD.samples,date,today);if(my!==planSeq)return;RD.raw=r;RD.win=win}
+    catch(e){if(my===planSeq)st.textContent='Couldn’t get the forecast ('+e.message+'). Check your connection and try again.';return}
+    finally{if(my===planSeq)$('#rGo').disabled=false}
+  }
+  RD.wx=parseWx(RD.raw.arr,RD.raw.set);computeRide();
+}
+const localInput=ms=>new Date(ms+RD.wx.off*1000).toISOString().slice(0,16);
+function computeRide(){
+  const W=RD.wx,sv=$('#rStart').value;if(!W||!sv||!RD.tr)return;
+  const start=Date.parse(sv.slice(0,16)+':00Z')-W.off*1000,rev=$('#rRev').checked;
+  const P=simulate(RD.tr,start,RD.spd,rev);
+  if(P.cover<.95){$('#rStatus').textContent='The forecast doesn’t cover that whole ride. Try an earlier start or a closer date.';$('#rideMain').hidden=true;return}
+  RD.plan=P;
+  RD.alts=[-3,-2,-1,0,1,2,3].map(h=>h?simulate(RD.tr,start+h*3600e3,RD.spd,rev):P).filter(a=>a.cover>=.95);
+  RD.revPlan=simulate(RD.tr,start,RD.spd,!rev);
+  $('#rStatus').textContent=`${W.models} weather model${W.models===1?'':'s'} blended at ${RD.samples.length} points along the route.`;
+  rideRender();
+}
+
+function rideRender(){
+  const P=RD.plan;if(!P||!RD.wx)return;
+  $('#rideMain').hidden=false;
+  const st=(k,v,s)=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  $('#rTitle').innerHTML=esc(RD.name)+(P.rev?' <span class="muted" style="font:500 16px Inter,sans-serif">ridden in reverse</span>':'');
+  const tr=Math.round(T(P.tMin))===Math.round(T(P.tMax))?fT(P.tMin):`${Math.round(T(P.tMin))}–${fT(P.tMax)}`;
+  $('#rSum').innerHTML=st('Distance',fD(P.tot),RD.tr.es?fE(P.gain)+' of climbing':'')+
+    st('Moving time',fDur(P.end-P.start),`${fClock(P.start)} → ${fClock(P.end,P.start)}`)+
+    st('Temperature',tr,`feels ${fT(P.feelLo)} at speed`)+
+    st('Rain chance',fPct(P.maxCh),P.precip>=.2?`≈ ${fP(P.precip)} during the ride`:'highest along the route')+
+    st('Wind',fW(P.avgWs),P.maxG?`gusts to ${fW(P.maxG)}`:'');
+  const W_=wear(P);
+  $('#rWear').innerHTML=`<h2>What to wear</h2><div class="muted" style="font-size:14px">Dress for</div><div class="big">${fT(P.feelLo)}</div>
+    <div class="muted" style="font-size:14px">what the colder part of the ride feels like at ${fW(RD.spd)}. The thermometer says ${tr}.</div>
+    <ul>${W_.kit.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>${W_.also.length?`<h3>Also</h3><ul>${W_.also.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+    <p class="muted" style="font-size:13px;margin:12px 0 0">A starting point. If you run warm or cold, shift one row up or down after a ride or two.</p>`;
+  // headwind/tailwind share
+  const order=['head','cross','tail','calm'];
+  $('#rBar').innerHTML=order.map(c=>P.by[c]?`<i style="width:${P.by[c]/P.L*100}%;background:${RC[c]}" title="${RW[c]} ${pc(P.by[c],P.L)}"></i>`:'').join('');
+  $('#rBarLeg').innerHTML=order.filter(c=>P.by[c]).map(c=>`<span><i style="background:${RC[c]}"></i>${RW[c]} ${pc(P.by[c],P.L)}</span>`).join('');
+  const S_=stretches(P),u=S.unit==='F'?'Mile':'Km',rng=(a,b)=>`${u} ${Math.round(dN(a))}–${Math.round(dN(b))}`;
+  const longest=c=>S_.filter(x=>x.cat===c).sort((a,b)=>(b.d1-b.d0)-(a.d1-a.d0))[0];
+  const hh=longest('head'),tt=longest('tail'),lines=[];
+  if(hh&&hh.d1-hh.d0>=P.tot*.1)lines.push(`<b>Toughest stretch:</b> ${rng(hh.d0,hh.d1)} (${fClock(hh.t0)}–${fClock(hh.t1,hh.t0)}), into a ${fW(hh.ws)} wind from the ${longDir(hh.from)}.`);
+  if(tt&&tt.d1-tt.d0>=P.tot*.1)lines.push(`<b>Best push:</b> ${rng(tt.d0,tt.d1)} (${fClock(tt.t0)}–${fClock(tt.t1,tt.t0)}), with a ${fW(tt.ws)} tailwind.`);
+  if(!lines.length)lines.push(P.avgWs<8?'Light winds all ride, so wind won’t be much of a factor.':'No long headwind or tailwind stretches. The wind mostly comes from the side.');
+  $('#rHead').innerHTML=`<div class="callout">${lines.join('<br>')}</div>`;
+  $('#rStr').innerHTML=S_.map(x=>`<li><span class="tag t-${x.cat}">${x.cat==='cross'?'Crosswind':RW[x.cat]}</span><div><b>${rng(x.d0,x.d1)}</b> · ${fClock(x.t0)}–${fClock(x.t1,x.t0)}
+    <div class="when">${x.cat==='calm'?`Under ${fW(6)} of wind`:`${fW(x.ws)} from the ${longDir(x.from)}${x.cat==='cross'?`, hitting you from the ${x.cross>0?'right':'left'}`:''}`}${x.gust&&x.gust>=x.ws*1.4&&x.gust>=25?` · gusts ${fW(x.gust)}`:''}</div></div></li>`).join('');
+  // checkpoints
+  const n=RD.samples.length;RD.cps=[];
+  const rows=Array.from({length:n},(_,k)=>{const x=P.tot*k/(n-1),s=P.segs.find(s=>s.d1>=x-1e-9)||P.segs[P.segs.length-1];
+    const t=s.t0+(s.d1>s.d0?Math.max(0,Math.min(1,(x-s.d0)/(s.d1-s.d0))):0)*(s.t1-s.t0);RD.cps.push(k===0?s.a:s.b);const w=s.w;
+    if(!w)return `<tr><td>${k+1}</td><td>${fD(x)}</td><td>${fClock(t,P.start)}</td><td colspan="5" class="muted">No forecast</td></tr>`;
+    return `<tr><td>${k+1}</td><td>${k===0?'Start':k===n-1?'Finish':fD(x)}</td><td>${fClock(t,P.start)}</td><td class="sk" title="${WORD[w.cond]||''}">${icon(w.cond)}</td><td>${fT(w.t)}</td><td>${fT(s.feel)}</td><td>${windOn(s.cat,w.ws,s.cross)}${w.wd!=null&&w.ws>=6?` <span class="muted" title="Wind from ${compass(w.wd)}">${arrow(toward(w.wd),16)}</span>`:''}${w.g&&w.g>=w.ws*1.4&&w.g>=25?`<small>gusts ${fW(w.g)}</small>`:''}</td><td>${fPct(w.ch)}</td></tr>`});
+  $('#rTab').innerHTML=`<thead><tr><th>#</th><th>Where</th><th>Time</th><th>Sky</th><th>Temp</th><th>Feels at speed</th><th>Wind on you</th><th>Rain</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+  // other start times
+  const best=RD.alts.reduce((a,b)=>b.score<a.score?b:a,P);
+  $('#rAlt').innerHTML=`<thead><tr><th>Leave</th><th>Back</th><th>Wind on you</th><th>Headwind</th><th>Rain</th><th>Feels</th><th></th></tr></thead><tbody>${RD.alts.map(a=>
+    `<tr${a===P?' class="mine"':''}><td>${fClock(a.start)}${a===P?' <small>your plan</small>':''}${a===best&&best.score<P.score-1?' <span class="agree a-hi">Best</span>':''}</td><td>${fClock(a.end,a.start)}</td><td>${onYou(a.avgHead)}</td><td>${pc(a.by.head,a.L)}</td><td>${fPct(a.maxCh)}</td><td>${fT(a.feelLo)}</td><td>${a===P?'':`<button type="button" data-s="${a.start}">Use</button>`}</td></tr>`).join('')}</tbody>`;
+  const R=RD.revPlan;
+  $('#rRevNote').innerHTML=R&&R.cover>=.95?`<b>${P.rev?'In the normal direction':'Ridden in reverse'}</b> at the same time: ${onYou(R.avgHead).toLowerCase()} on average, headwind for ${pc(R.by.head,R.L)} of it${R.score<P.score-1?' — that’s the easier way round.':'.'} <button type="button" class="linkbtn" id="rFlip">${P.rev?'Ride it normally':'Ride it in reverse'}</button>`:'';
+  drawMap();drawProfile();
+}
+
+function drawMap(){
+  const svg=$('#rmapSvg'),P=RD.plan;if(!P)return;const W=svg.clientWidth,H=svg.clientHeight;if(!W||!H)return;
+  const pts=RD.tr.pts;let a0=90,a1=-90,o0=180,o1=-180;for(const p of pts){a0=Math.min(a0,p.lat);a1=Math.max(a1,p.lat);o0=Math.min(o0,p.lon);o1=Math.max(o1,p.lon)}
+  const k=Math.cos((a0+a1)/2*RAD),pad=28,sx=Math.max((o1-o0)*k,1e-5),sy=Math.max(a1-a0,1e-5),sc=Math.min((W-2*pad)/sx,(H-2*pad)/sy);
+  const ox=(W-sx*sc)/2,oy=(H-sy*sc)/2,X=p=>ox+(p.lon-o0)*k*sc,Y=p=>oy+(a1-p.lat)*sc;RD.proj=p=>[X(p),Y(p)];
+  const runs=[];let cur=null;
+  for(const s of P.segs){if(!cur||cur.c!==s.cat){cur={c:s.cat,p:[s.a]};runs.push(cur)}const l=cur.p[cur.p.length-1];if(Math.hypot(X(s.b)-X(l),Y(s.b)-Y(l))>=1.5||s===P.segs[P.segs.length-1])cur.p.push(s.b)}
+  const pl=r=>r.p.map(p=>X(p).toFixed(1)+','+Y(p).toFixed(1)).join(' ');
+  let g=`<text x="14" y="22" fill="var(--mut)">N ↑</text>`;
+  g+=runs.map(r=>`<polyline points="${pl(r)}" fill="none" stroke="var(--card)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+  g+=runs.map(r=>`<polyline points="${pl(r)}" fill="none" stroke="${RC[r.c]}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+  const cps=RD.cps||[];
+  cps.forEach((p,i)=>{if(i===0||i===cps.length-1)return;g+=`<circle cx="${X(p).toFixed(1)}" cy="${Y(p).toFixed(1)}" r="9" fill="var(--card)" stroke="var(--ink)" stroke-width="1.5"/><text x="${X(p).toFixed(1)}" y="${(Y(p)+4).toFixed(1)}" text-anchor="middle" fill="var(--ink)">${i+1}</text>`});
+  const f=P.segs[P.segs.length-1].b,s0=P.segs[0].a,loop=hav(f,s0)<.3;
+  g+=`<circle cx="${X(f)}" cy="${Y(f)}" r="8" fill="var(--ink)" stroke="var(--card)" stroke-width="3"/>`;
+  g+=`<circle cx="${X(s0)}" cy="${Y(s0)}" r="${loop?5:8}" fill="#22a35b" stroke="var(--card)" stroke-width="3"/>`;
+  const fl=X(f)<X(s0); // put the labels on opposite sides so they don't collide
+  g+=`<text x="${X(s0)+(fl?12:-12)}" y="${Y(s0)-10}" text-anchor="${fl?'start':'end'}" fill="var(--ink)">${loop?'Start / finish':'Start'}</text>${loop?'':`<text x="${X(f)+(fl?-12:12)}" y="${Y(f)-10}" text-anchor="${fl?'end':'start'}" fill="var(--ink)">Finish</text>`}`;
+  g+=`<circle id="mdot" r="7" fill="#ffc83d" stroke="var(--ink)" stroke-width="2" visibility="hidden"/>`;
+  svg.innerHTML=g;
+}
+function drawProfile(){
+  const svg=$('#rprof'),P=RD.plan;if(!P)return;const W=svg.clientWidth,H=svg.clientHeight;if(!W||!H)return;
+  const pl=44,pr=10,pt=10,pb=24,es=RD.tr.es!=null,ih=H-pt-pb,wH=es?ih*.48:ih,wTop=H-pb-wH,wMid=wTop+wH/2,eBot=wTop-14;
+  const tot=P.tot,x=d=>pl+d/tot*(W-pl-pr);
+  const nb=Math.max(20,Math.min(160,Math.floor((W-pl-pr)/5))),bk=Array.from({length:nb},()=>({h:0,l:0}));
+  for(const s of P.segs){if(!s.w)continue;const b=Math.min(nb-1,Math.floor((s.d0+s.d1)/2/tot*nb)),l=s.d1-s.d0;bk[b].h+=s.head*l;bk[b].l+=l}
+  const mx=Math.max(15,...bk.map(b=>b.l?Math.abs(b.h/b.l):0)),bw=(W-pl-pr)/nb;let g='';
+  if(es){
+    const E=[[0,P.segs[0].ele0],...P.segs.map(s=>[s.d1,s.ele])],step=Math.max(1,Math.floor(E.length/600)),EE=E.filter((_,i)=>i%step===0||i===E.length-1);
+    const vs=EE.map(e=>e[1]),lo=Math.min(...vs),hi=Math.max(...vs),rg=Math.max(hi-lo,20),y=e=>eBot-(e-lo)/rg*(eBot-pt);
+    g+=`<polygon points="${x(0)},${eBot} ${EE.map(e=>x(e[0]).toFixed(1)+','+y(e[1]).toFixed(1)).join(' ')} ${x(tot)},${eBot}" fill="var(--soft)" stroke="var(--mut)" stroke-width="1.5"/>`;
+    g+=`<text x="${pl-6}" y="${y(hi)+4}" text-anchor="end">${fE(hi)}</text><text x="${pl-6}" y="${eBot}" text-anchor="end">${fE(lo)}</text>`;
+  }
+  bk.forEach((b,i)=>{if(!b.l)return;const h=b.h/b.l,hh=Math.abs(h)/mx*(wH/2-2),tail=h<0;
+    g+=`<rect x="${(pl+i*bw+.5).toFixed(1)}" y="${(tail?wMid-hh:wMid).toFixed(1)}" width="${Math.max(1,bw-1).toFixed(1)}" height="${Math.max(.5,hh).toFixed(1)}" fill="${tail?RC.tail:RC.head}"/>`});
+  g+=`<line x1="${pl}" x2="${W-pr}" y1="${wMid}" y2="${wMid}" stroke="var(--mut)"/><text x="${pl-6}" y="${wTop+12}" text-anchor="end">Tail</text><text x="${pl-6}" y="${wTop+wH-2}" text-anchor="end">Head</text>`;
+  const uT=dN(tot),cand=[1,2,5,10,20,25,50,100,200],maxT=W<520?5:9,stp=cand.find(c=>uT/c<=maxT)||500;
+  for(let v=0;v<=uT+1e-6;v+=stp){const xx=x(v/dN(1));g+=`<text x="${xx}" y="${H-6}" text-anchor="middle">${v}${v===0?' '+(S.unit==='F'?'mi':'km'):''}</text>`}
+  svg.innerHTML=g+`<line id="pcur" y1="${pt}" y2="${H-pb}" stroke="var(--ink)" visibility="hidden"/>`;
+  const ro=$('#rro');
+  svg.onpointermove=e=>{const r=svg.getBoundingClientRect(),d=Math.max(0,Math.min(tot,(e.clientX-r.left-pl)/(W-pl-pr)*tot)),s=P.segs.find(s=>s.d1>=d)||P.segs[P.segs.length-1];
+    const c=svg.querySelector('#pcur');c.setAttribute('x1',x(d));c.setAttribute('x2',x(d));c.setAttribute('visibility','visible');
+    ro.hidden=false;ro.innerHTML=`${fD(d)} · ${fClock(s.t0,P.start)} · ${s.w?`${s.cat==='cross'?'Crosswind':RW[s.cat]} ${fW(s.w.ws)} · ${fT(s.w.t)}`:'no forecast'}${s.ele!=null?' · '+fE(s.ele):''}`;
+    const m=$('#mdot');if(m&&RD.proj){const [mx_,my_]=RD.proj(s.b);m.setAttribute('cx',mx_);m.setAttribute('cy',my_);m.setAttribute('visibility','visible')}};
+  svg.onpointerleave=()=>{ro.hidden=true;const c=svg.querySelector('#pcur');if(c)c.setAttribute('visibility','hidden');const m=$('#mdot');if(m)m.setAttribute('visibility','hidden')};
+}
+new ResizeObserver(()=>{if(RD.plan)drawMap()}).observe($('#rmap'));
+new ResizeObserver(()=>{if(RD.plan)drawProfile()}).observe($('#rprofwrap'));
+
+function stravaHelp(text){
+  const m=text.match(/strava\.com\/(routes|activities)\/(\d+)/i);
+  $('#rStatus').innerHTML=`Strava doesn’t let other websites read routes from a link, so this needs the GPX file. ${m?`<a href="https://www.strava.com/${m[1].toLowerCase()}/${m[2]}/export_gpx" target="_blank" rel="noopener">Download this ${m[1].toLowerCase()==='routes'?'route':'ride'}’s GPX from Strava</a> (you need to be signed in), then drop the file here.`:'Open the route on strava.com, choose Export GPX from its ⋯ menu, then drop the file here.'}`;
+}
+function takeText(text,label){
+  text=String(text||'').trim();if(!text)return;
+  if(text.length<500&&/strava\.(com|app\.link)/i.test(text)){stravaHelp(text);return}
+  if(text.length<500&&/^https?:\/\//i.test(text)){$('#rStatus').textContent='Links can’t be read directly. Export the route as a GPX file from that site and drop it here.';return}
+  try{const r=parseRoute(text);if(label&&(!r.name||r.name.length>80))r.name=label.replace(/\.(gpx|tcx|xml)$/i,'');setRoute(r);$('#gpx').value='';planRide()}
+  catch(e){$('#rStatus').textContent=e.message==='short'?'That route is too short to plan.':'That doesn’t look like a GPX or TCX route. Drop the file itself, or paste everything inside it.'}
+}
+async function readFile(f){if(f.size>40e6){$('#rStatus').textContent='That file is too big. Export just the route as GPX.';return}
+  if(/\.fit$/i.test(f.name)){$('#rStatus').textContent='FIT files aren’t supported. Export the route as GPX instead.';return}
+  takeText(await f.text(),f.name)}
+const drop=$('#drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,()=>drop.classList.remove('over')));
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>{e.preventDefault();if(document.body.dataset.tab!=='ride')return;
+  const f=e.dataTransfer.files[0];if(f)readFile(f);else takeText(e.dataTransfer.getData('text'))});
+$('#gpxFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)readFile(f);e.target.value=''});
+$('#gpx').addEventListener('paste',e=>{const f=e.clipboardData&&e.clipboardData.files[0];if(f){e.preventDefault();readFile(f);return}setTimeout(()=>takeText($('#gpx').value),0)});
+$('#gpx').addEventListener('change',()=>takeText($('#gpx').value));
+$('#rGo').addEventListener('click',()=>{const v=$('#gpx').value.trim();if(v)takeText(v);else planRide()});
+$('#rStart').addEventListener('change',()=>{if(RD.tr&&RD.raw)planRide()});
+$('#rRev').addEventListener('change',()=>{if(RD.wx)computeRide()});
+const showSpd=()=>{$('#spdU').textContent=S.unit==='F'?'mph':'km/h';$('#rSpd').value=+(S.unit==='F'?RD.spd/1.609:RD.spd).toFixed(1)};
+$('#rSpd').addEventListener('change',()=>{const v=parseFloat($('#rSpd').value);if(!(v>=3&&v<=60)){showSpd();return}RD.spd=S.unit==='F'?v*1.609:v;save('rspd',RD.spd);if(RD.wx)computeRide()});
+$('#rAlt').addEventListener('click',e=>{const b=e.target.closest('button[data-s]');if(!b)return;$('#rStart').value=localInput(+b.dataset.s);computeRide();$('#rideMain').scrollIntoView({behavior:'smooth'})});
+$('#rRevNote').addEventListener('click',e=>{if(e.target.id!=='rFlip')return;$('#rRev').checked=!$('#rRev').checked;computeRide()});
+// default start: the next full hour, or 8 AM if that falls at night
+(()=>{const d=new Date();d.setMinutes(0,0,0);d.setHours(d.getHours()+1);if(d.getHours()>=19)d.setDate(d.getDate()+1);if(d.getHours()>=19||d.getHours()<6)d.setHours(8);
+  const p=n=>String(n).padStart(2,'0');$('#rStart').value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:00`})();
+function setTab(t){
+  document.body.dataset.tab=t;$('#tF').setAttribute('aria-selected',t!=='ride');$('#tR').setAttribute('aria-selected',t==='ride');
+  try{history.replaceState(null,'',t==='ride'?'#ride':location.pathname+location.search)}catch(e){}
+  if(t==='ride'&&RD.tr&&!RD.plan)planRide();
+}
+$('#tF').onclick=()=>setTab('forecast');$('#tR').onclick=()=>setTab('ride');
+{const sr=load('route');if(sr&&Array.isArray(sr.p))try{setRoute({name:sr.name,pts:sr.p.map(([lat,lon,ele])=>({lat,lon,ele}))},false)}catch(e){}}
+
+function setUnit(u){S.unit=u;save('unit',u);$('#uF').setAttribute('aria-pressed',u==='F');$('#uC').setAttribute('aria-pressed',u==='C');if(S.sources.length)render();showSpd();showRouteName();if(RD.plan)rideRender()}
+function setW(w){S.weighted=w;save('weighted',w);$('#wS').setAttribute('aria-pressed',w);$('#wE').setAttribute('aria-pressed',!w);if(S.sources.length)render();if(RD.raw){RD.wx=parseWx(RD.raw.arr,RD.raw.set);computeRide()}}
 $('#uF').onclick=()=>setUnit('F');$('#uC').onclick=()=>setUnit('C');
 $('#wS').onclick=()=>setW(true);$('#wE').onclick=()=>setW(false);
-setUnit(S.unit);setW(S.weighted);renderRecent();
+setUnit(S.unit);setW(S.weighted);renderRecent();setTab(location.hash==='#ride'?'ride':'forecast');
 const saved=load('loc');if(saved&&saved.lat!=null)loadLoc(saved);
 }
 </script>
